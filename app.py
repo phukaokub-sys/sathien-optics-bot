@@ -199,6 +199,8 @@ def get_booth_location_flex():
     return FlexMessage(alt_text="พิกัดออกบูท เสถียรการแว่น", contents=FlexContainer.from_json(json.dumps(bubble_json)))
 
 
+BASE_URL = os.getenv("BASE_URL", "https://sathien-optics-bot.onrender.com").rstrip("/")
+
 def get_tracking_flex(order=None, user_id=""):
     if order:
         status_color = "#10B981" if "เสร็จ" in order['status'] or "จัดส่ง" in order['status'] else "#F59E0B"
@@ -267,7 +269,7 @@ def get_tracking_flex(order=None, user_id=""):
         return FlexMessage(alt_text=f"สถานะออเดอร์ {order['order_no']}", contents=FlexContainer.from_json(json.dumps(bubble_json)))
 
     # Default order tracking menu
-    address_url = f"https://host-took-locator-remind.trycloudflare.com/form/address"
+    address_url = f"{BASE_URL}/form/address"
     if user_id:
         address_url += f"?userId={user_id}"
 
@@ -335,7 +337,7 @@ def get_tracking_flex(order=None, user_id=""):
     return FlexMessage(alt_text="ติดตามแว่นตาและพัสดุ เสถียรการแว่น", contents=FlexContainer.from_json(json.dumps(bubble_json)))
 
 
-BASE_URL = os.getenv("BASE_URL", "https://host-took-locator-remind.trycloudflare.com")
+# BASE_URL is defined above as os.getenv("BASE_URL", "https://sathien-optics-bot.onrender.com")
 
 def build_prescription_bubble(rx, base_url=BASE_URL):
     p_name = rx.get("patient_name") or rx.get("customer_name") or "คุณลูกค้า"

@@ -1,0 +1,8 @@
+.env
+__pycache__/
+*.pyc
+sathien_optics.db
+debug_*.png
+test_*.png
+test_*.py
+cloudflared.exe

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>ป้ายตั้งโต๊ะหน้าบูท - เสถียรการแว่น</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Prompt', sans-serif; }
+        @media print {
+            .no-print { display: none; }
+            body { padding: 0; background: white; }
+        }
+    </style>
+</head>
+<body class="bg-rose-50/50 min-h-screen p-8 flex flex-col items-center">
+    <!-- Print Button -->
+    <div class="mb-6 no-print">
+        <button onclick="window.print()" class="bg-pink-600 hover:bg-pink-700 text-white font-bold py-2.5 px-6 rounded-xl shadow-lg flex items-center gap-2">
+            <span>🖨️ กดพิมพ์ป้ายตั้งโต๊ะ (A4 / A5)</span>
+        </button>
+    </div>
+
+    <!-- Printable Card Container -->
+    <div class="w-[210mm] min-h-[297mm] bg-white shadow-2xl p-10 flex flex-col justify-between border-2 border-pink-100 rounded-3xl relative overflow-hidden">
+        
+        <!-- Top decorative border -->
+        <div class="absolute top-0 left-0 right-0 h-4 bg-gradient-to-r from-pink-500 via-amber-400 to-rose-600"></div>
+
+        <!-- Header with Owl Mascot -->
+        <div class="text-center pt-2 flex flex-col items-center">
+            <img src="/logo-image" alt="เสถียรการแว่น โลโก้" class="w-36 h-36 object-contain mb-1 drop-shadow-md">
+            <p class="text-sm text-pink-700 font-semibold tracking-wide">. เลนส์ถูกตา กรอบโดนใจ ใส่ใจบริการ .</p>
+            <h1 class="text-5xl font-extrabold text-slate-900 tracking-tight mt-1">เสถียรการแว่น</h1>
+            <p class="text-lg text-rose-600 font-bold mt-1">ตรวจวัดสายตาฟรีด้วยระบบคอมพิวเตอร์ • สั่งตัดประกอบเลนส์คุณภาพ</p>
+        </div>
+
+        <!-- Center: QR Code & Hook -->
+        <div class="my-4 bg-gradient-to-b from-pink-50/50 to-amber-50/50 p-6 rounded-3xl border-2 border-pink-200 flex flex-col items-center text-center shadow-sm">
+            <h2 class="text-2xl font-bold text-slate-800 mb-1">📲 สแกนเพิ่มเพื่อนใน LINE</h2>
+            <p class="text-sm text-slate-600 mb-4">เพื่อรับ <strong class="text-pink-700">"สลิปผลตรวจวัดสายตา"</strong> และติดตามสถานะแว่นตาของคุณ</p>
+
+            <!-- QR Code -->
+            <div class="bg-white p-4 rounded-2xl shadow-xl border border-pink-100 inline-block">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=https://line.me/R/ti/p/%40648yzemf" 
+                     alt="LINE QR Code @648yzemf" class="w-52 h-52 mx-auto">
+                <p class="text-xs font-bold text-slate-500 mt-2">LINE ID: @648yzemf</p>
+            </div>
+        </div>
+
+        <!-- Key Benefits List -->
+        <div class="grid grid-cols-3 gap-4 text-center my-2">
+            <div class="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl">
+                <span class="text-3xl">👁️</span>
+                <h3 class="font-bold text-emerald-900 text-base mt-1">วัดสายตาฟรี</h3>
+                <p class="text-xs text-emerald-700 mt-0.5">ระบบคอมพิวเตอร์ละเอียด พร้อมการ์ดสลิปใน LINE</p>
+            </div>
+            <div class="p-4 bg-pink-50 border border-pink-200 rounded-2xl">
+                <span class="text-3xl">🛠️</span>
+                <h3 class="font-bold text-pink-900 text-base mt-1">บริการหลังการขาย</h3>
+                <p class="text-xs text-pink-700 mt-0.5">มีปัญหาติดต่อ คุณเสถียร ได้โดยตรง ยินดีดูแลเต็มที่</p>
+            </div>
+            <div class="p-4 bg-blue-50 border border-blue-200 rounded-2xl">
+                <span class="text-3xl">🚚</span>
+                <h3 class="font-bold text-blue-900 text-base mt-1">ส่งฟรีถึงบ้าน</h3>
+                <p class="text-xs text-blue-700 mt-0.5">Flash Express หรือทางร้านขับไปส่งมอบถึงมือ</p>
+            </div>
+        </div>
+
+        <!-- Footer: Main Store info & Google Maps -->
+        <div class="bg-slate-900 text-white p-6 rounded-2xl flex items-center justify-between mt-2">
+            <div>
+                <h3 class="font-bold text-base text-amber-400">🏢 ร้านประจำ: ศูนย์ราชการเฉลิมพระเกียรติฯ อาคาร B</h3>
+                <p class="text-xs text-slate-300 mt-0.5">ชั้นล่าง (ตรงข้าม Telewiz) ถนนแจ้งวัฒนะ • เปิดวันจันทร์ - ศุกร์ ปิด 15:30 น.</p>
+                <a href="https://maps.app.goo.gl/RWCdTXF3HJiSskis9" target="_blank" class="inline-block text-xs text-emerald-400 underline font-semibold mt-1">
+                    📍 แผนที่ Google Maps: maps.app.goo.gl/RWCdTXF3HJiSskis9
+                </a>
+            </div>
+            <div class="text-right border-l border-slate-700 pl-6">
+                <p class="text-xs text-slate-400">โทรติดต่อร้าน:</p>
+                <p class="text-sm font-bold text-white">085-433-6699 (คุณนก)</p>
+                <p class="text-sm font-bold text-white">092-393-7770 (คุณเสถียร)</p>
+            </div>
+        </div>
+
+        <!-- Bottom decorative border -->
+        <div class="absolute bottom-0 left-0 right-0 h-3 bg-pink-700"></div>
+    </div>
+</body>
+</html>

@@ -6,436 +6,648 @@
     <title>ระบบจัดการหลังบ้าน - เสถียรการแว่น</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style> body { font-family: 'Prompt', sans-serif; } </style>
+    <style>
+        body { font-family: 'Prompt', sans-serif; }
+        .tab-btn.active {
+            background: linear-gradient(135deg, #065F46, #047857);
+            color: #FFFFFF;
+            box-shadow: 0 4px 12px rgba(6, 95, 70, 0.25);
+        }
+        .tab-btn:not(.active) {
+            background-color: #FFFFFF;
+            color: #475569;
+        }
+        .tab-btn:not(.active):hover {
+            background-color: #F8FAFC;
+            color: #0F172A;
+        }
+    </style>
 </head>
-<body class="bg-amber-50/40 min-h-screen pb-12">
-    <!-- Navbar -->
-    <header class="bg-slate-900 text-white p-4 shadow-md sticky top-0 z-30">
-        <div class="max-w-4xl mx-auto flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <span class="text-3xl">👓</span>
+<body class="bg-slate-100/80 min-h-screen text-slate-800 pb-16">
+    <!-- Top Navbar -->
+    <header class="bg-emerald-950 text-white sticky top-0 z-40 shadow-lg border-b border-amber-500/30">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-white p-0.5 overflow-hidden ring-2 ring-amber-400 flex items-center justify-center flex-shrink-0">
+                    <img src="/logo-image" alt="เสถียรการแว่น" class="w-full h-full object-cover">
+                </div>
                 <div>
-                    <h1 class="font-bold text-lg leading-tight">เสถียรการแว่น (ระบบจัดการหลังบ้าน)</h1>
-                    <p class="text-xs text-amber-300">สำหรับคุณพ่อ & แอดมิน • ศูนย์ราชการ อาคาร B</p>
+                    <div class="flex items-center gap-2">
+                        <h1 class="font-bold text-base md:text-lg leading-tight tracking-wide">เสถียรการแว่น</h1>
+                        <span class="text-[10px] bg-emerald-800 text-emerald-200 px-2 py-0.5 rounded-full font-medium border border-emerald-700 hidden sm:inline-block">
+                            ศูนย์ราชการ อาคาร B
+                        </span>
+                    </div>
+                    <p class="text-[11px] text-amber-300 font-light">ระบบจัดการหลังบ้าน & คลังข้อมูลลูกค้า (Admin Dashboard)</p>
                 </div>
             </div>
+
             <div class="flex items-center gap-2">
-                <a href="/booth-card" target="_blank" class="text-xs bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold px-3 py-1.5 rounded-lg shadow">
-                    🖨️ ป้ายหน้าบูท
+                <a href="/booth-card" target="_blank" 
+                   class="text-xs bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-3 py-1.5 rounded-xl shadow-sm flex items-center gap-1 transition">
+                    <span>🖨️</span> <span class="hidden sm:inline">ป้ายหน้าบูท</span>
                 </a>
-                <a href="/admin" class="text-xs bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-700">
-                    🔄 รีเฟรช
+                <a href="/admin" 
+                   class="text-xs bg-emerald-900 hover:bg-emerald-800 text-emerald-200 px-3 py-1.5 rounded-xl border border-emerald-800 transition">
+                    🔄 <span class="hidden sm:inline">รีเฟรช</span>
+                </a>
+                <a href="/admin/logout" 
+                   class="text-xs bg-rose-900/60 hover:bg-rose-900 text-rose-200 px-3 py-1.5 rounded-xl border border-rose-800/80 transition flex items-center gap-1">
+                    🚪 <span>ออก</span>
                 </a>
             </div>
         </div>
     </header>
 
-    <main class="max-w-4xl mx-auto p-4 space-y-6">
-        <!-- Section 1: จัดการโปรโมชั่น & แพ็กเกจแว่นตาหน้าร้าน (แสดงบน LINE Flex Carousel ทันที) -->
-        <section class="bg-white rounded-2xl shadow-sm border border-orange-200 overflow-hidden">
-            <div class="bg-gradient-to-r from-orange-50 via-amber-50 to-yellow-50 border-b border-orange-200 p-4 flex items-center justify-between">
-                <div>
-                    <h2 class="font-bold text-orange-950 text-base flex items-center gap-2">
-                        <span>🎁</span> จัดการโปรโมชั่น & แพ็กเกจตัดแว่นหน้าร้าน
-                    </h2>
-                    <p class="text-xs text-orange-800">
-                        ข้อมูลที่บันทึกตรงนี้จะ <strong>อัปเดตเป็นการ์ด Flex Carousel ใน LINE ลูกค้าทันที</strong> เมื่อลูกค้ากดเมนู "โปรโมชั่นพิเศษ" หรือพิมพ์ถามราคา
-                    </p>
+    <main class="max-w-6xl mx-auto px-4 pt-6 space-y-6">
+        <!-- Dashboard Stat Overview Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3.5">
+            <!-- Card 1: Orders -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between hover:shadow-md transition">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold text-slate-500 uppercase">ออเดอร์ตัดแว่น</span>
+                    <span class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-base">📦</span>
+                </div>
+                <div class="mt-3 flex items-baseline justify-between">
+                    <span class="text-2xl md:text-3xl font-extrabold text-slate-900">{{ stats.total_orders if stats else (orders|length if orders else 0) }}</span>
+                    <span class="text-[11px] font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">
+                        เสร็จแล้ว: {{ stats.completed_orders if stats else 0 }}
+                    </span>
                 </div>
             </div>
 
-            <!-- Form เพิ่มโปรโมชั่นใหม่ -->
-            <form action="/admin/add_promotion" method="POST" class="p-4 bg-orange-50/30 border-b border-orange-100 space-y-3">
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+            <!-- Card 2: Promotions -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between hover:shadow-md transition">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold text-slate-500 uppercase">แพ็กเกจโปร</span>
+                    <span class="w-8 h-8 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center text-base">🎁</span>
+                </div>
+                <div class="mt-3 flex items-baseline justify-between">
+                    <span class="text-2xl md:text-3xl font-extrabold text-orange-600">{{ stats.total_promos if stats else (promotions|length if promotions else 0) }}</span>
+                    <span class="text-[11px] font-medium text-orange-700 bg-orange-50 px-2 py-0.5 rounded-md">เปิดใน LINE</span>
+                </div>
+            </div>
+
+            <!-- Card 3: Prescriptions -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between hover:shadow-md transition">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold text-slate-500 uppercase">สลิปวัดสายตา</span>
+                    <span class="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-base">👓</span>
+                </div>
+                <div class="mt-3 flex items-baseline justify-between">
+                    <span class="text-2xl md:text-3xl font-extrabold text-purple-700">{{ stats.total_rx if stats else (prescriptions|length if prescriptions else 0) }}</span>
+                    <span class="text-[11px] font-medium text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md">ประวัติดิจิทัล</span>
+                </div>
+            </div>
+
+            <!-- Card 4: Booths -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between hover:shadow-md transition">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold text-slate-500 uppercase">บูทสัญจร</span>
+                    <span class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-base">🎪</span>
+                </div>
+                <div class="mt-3 flex items-baseline justify-between">
+                    <span class="text-2xl md:text-3xl font-extrabold text-emerald-700">{{ stats.total_schedules if stats else (schedules|length if schedules else 0) }}</span>
+                    <span class="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">จุดสัญจร</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section Switcher Tabs -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+            <button onclick="switchTab('orders')" id="btn-tab-orders" 
+                    class="tab-btn active px-4 py-2.5 rounded-2xl text-xs md:text-sm font-bold flex items-center gap-2 whitespace-nowrap border border-slate-200 transition">
+                <span>📦</span>
+                <span>ออเดอร์ตัดแว่น & จัดส่ง</span>
+                <span class="bg-white/20 text-[11px] px-2 py-0.5 rounded-full font-mono">{{ orders|length if orders else 0 }}</span>
+            </button>
+            <button onclick="switchTab('promotions')" id="btn-tab-promotions" 
+                    class="tab-btn px-4 py-2.5 rounded-2xl text-xs md:text-sm font-bold flex items-center gap-2 whitespace-nowrap border border-slate-200 transition">
+                <span>🎁</span>
+                <span>จัดการโปรโมชั่น</span>
+                <span class="bg-slate-200 text-slate-700 text-[11px] px-2 py-0.5 rounded-full font-mono">{{ promotions|length if promotions else 0 }}</span>
+            </button>
+            <button onclick="switchTab('prescriptions')" id="btn-tab-prescriptions" 
+                    class="tab-btn px-4 py-2.5 rounded-2xl text-xs md:text-sm font-bold flex items-center gap-2 whitespace-nowrap border border-slate-200 transition">
+                <span>👓</span>
+                <span>บันทึกสลิปสายตา</span>
+                <span class="bg-slate-200 text-slate-700 text-[11px] px-2 py-0.5 rounded-full font-mono">{{ prescriptions|length if prescriptions else 0 }}</span>
+            </button>
+            <button onclick="switchTab('schedules')" id="btn-tab-schedules" 
+                    class="tab-btn px-4 py-2.5 rounded-2xl text-xs md:text-sm font-bold flex items-center gap-2 whitespace-nowrap border border-slate-200 transition">
+                <span>🎪</span>
+                <span>ตารางบูทสัญจร</span>
+                <span class="bg-slate-200 text-slate-700 text-[11px] px-2 py-0.5 rounded-full font-mono">{{ schedules|length if schedules else 0 }}</span>
+            </button>
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- TAB 1: ออเดอร์ตัดแว่น & จัดส่ง -->
+        <!-- ============================================================== -->
+        <section id="tab-orders" class="tab-content space-y-4">
+            <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="bg-gradient-to-r from-blue-900 via-indigo-950 to-blue-950 p-5 text-white flex flex-col md:flex-row md:items-center justify-between gap-2">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-700 mb-1">ชื่อแพ็กเกจ*</label>
-                        <input type="text" name="title" required placeholder="เช่น ชุดตัดแว่นเริ่มต้น" 
-                               class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white">
+                        <h2 class="font-bold text-lg flex items-center gap-2">
+                            <span>📦</span> รายการสั่งตัดแว่น & แจ้งเตือนสถานะส่งพัสดุ
+                        </h2>
+                        <p class="text-xs text-blue-200 mt-0.5">
+                            เมื่อกดปุ่มสี ระบบจะ <strong>ยิงข้อความแจ้งเตือนเข้า LINE ลูกค้าทันทีอัตโนมัติ</strong>
+                        </p>
                     </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-700 mb-1">ราคา (บาท)*</label>
-                        <input type="text" name="price" required placeholder="เช่น 990 หรือ 1,490" 
-                               class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-700 mb-1">ป้ายกำกับ (Tag)</label>
-                        <input type="text" name="tag" placeholder="เช่น 🔥 โปรสุดคุ้ม ยอดนิยม" 
-                               class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-700 mb-1">ธีมสีการ์ด & ลำดับ</label>
-                        <div class="flex gap-2">
-                            <select name="color" class="flex-1 px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white font-medium">
-                                <option value="#EA580C" selected>🟠 ส้มสดใส (#EA580C)</option>
-                                <option value="#2563EB">🔵 น้ำเงินสมาร์ท (#2563EB)</option>
-                                <option value="#059669">🟢 เขียวเสถียร (#059669)</option>
-                                <option value="#7C3AED">🟣 ม่วงพรีเมียม (#7C3AED)</option>
-                                <option value="#DB2777">🌸 ชมพูสดใส (#DB2777)</option>
-                                <option value="#15803D">🌲 เขียวหรู (#15803D)</option>
-                            </select>
-                            <input type="number" name="sort_order" value="1" min="1" max="99" title="ลำดับแสดงผล"
-                                   class="w-16 px-2 py-2 rounded-xl border border-slate-300 text-xs text-center bg-white">
-                        </div>
-                    </div>
+                    <span class="text-xs bg-blue-800/80 text-blue-200 px-3 py-1 rounded-full font-mono border border-blue-700 self-start md:self-auto">
+                        ออเดอร์ทั้งหมด: {{ orders|length if orders else 0 }} รายการ
+                    </span>
                 </div>
 
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">
-                        รายละเอียดไฮไลท์ (พิมพ์ 1 บรรทัดต่อ 1 ข้อความ หรือใส่เครื่องหมาย ✨ ด้านหน้า)
-                    </label>
-                    <textarea name="details" rows="3" placeholder="✨ กรอบแว่นแฟชั่น น้ำหนักเบา (เลือกได้ทั้งร้าน)&#10;✨ เลนส์ Multicoat สารเคลือบตัดแสงสะท้อน&#10;✨ ป้องกันรอยขีดข่วน + ภาพคมชัดสบายตา&#10;✨ ตรวจวัดสายตาฟรีด้วยระบบคอมพิวเตอร์&#10;🎁 ฟรีกล่องใส่แว่น + ผ้าเช็ดเลนส์ไมโครไฟเบอร์" 
-                              class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white"></textarea>
-                </div>
+                <div class="divide-y divide-slate-100">
+                    {% if orders %}
+                    {% for o in orders %}
+                    <div class="p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4 hover:bg-slate-50/70 transition">
+                        <div class="space-y-2 flex-1">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="font-bold text-slate-900 text-base">{{ o.customer_name }}</span>
+                                <a href="tel:{{ o.phone }}" class="text-xs bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-3 py-1 rounded-full font-medium border border-emerald-200 flex items-center gap-1 transition">
+                                    📞 {{ o.phone }}
+                                </a>
+                                <span class="text-xs bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-lg font-mono font-semibold">#{{ o.order_no }}</span>
+                                {% if o.line_user_id %}
+                                <span class="text-[11px] bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full font-semibold flex items-center gap-1">
+                                    <span>🟢</span> เชื่อม LINE แล้ว
+                                </span>
+                                {% else %}
+                                <span class="text-[11px] bg-blue-100 text-blue-800 px-2.5 py-0.5 rounded-full font-medium">
+                                    🔔 พร้อมส่งแจ้งเตือน
+                                </span>
+                                {% endif %}
+                            </div>
 
-                <div class="flex justify-end">
-                    <button type="submit" class="bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold px-5 py-2 rounded-xl text-xs shadow flex items-center gap-1.5 transition">
-                        <span>➕</span> เพิ่มแพ็กเกจโปรโมชั่น
-                    </button>
-                </div>
-            </form>
+                            <div class="text-xs text-slate-700 bg-slate-50 p-3 rounded-2xl border border-slate-200">
+                                <strong class="text-slate-900">📍 ที่อยู่จัดส่ง:</strong> {{ o.address }}
+                            </div>
 
-            <!-- รายการโปรโมชั่นที่มีอยู่ -->
-            <div class="p-4 space-y-3">
-                <h3 class="text-xs font-bold text-slate-600 uppercase flex items-center justify-between">
-                    <span>🏷️ แพ็กเกจโปรโมชั่นที่กำลังเปิดใช้งาน ({{ promotions|length if promotions else 0 }} รายการ):</span>
-                    <span class="text-xs text-orange-600 font-normal">แสดงเป็น Carousel เลื่อนดูได้ใน LINE</span>
-                </h3>
-
-                {% if promotions %}
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                    {% for p in promotions %}
-                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col justify-between hover:border-orange-300 transition">
-                        <div class="p-3 text-white" style="background-color: {{ p.color or '#EA580C' }};">
-                            <span class="text-[10px] bg-black/25 px-2 py-0.5 rounded-full font-semibold">{{ p.tag or 'HOT DEAL' }}</span>
-                            <h4 class="font-bold text-sm mt-1 leading-snug">{{ p.title }}</h4>
-                            <p class="text-lg font-extrabold text-amber-200">฿ {{ p.price }}.-</p>
-                        </div>
-                        <div class="p-3 text-xs text-slate-600 space-y-1 flex-1 bg-slate-50/50">
-                            {% for line in p.details.split('\n') %}
-                            {% if line.strip() %}
-                            <p class="text-[11px] leading-tight text-slate-700 truncate">{{ line.strip() }}</p>
+                            {% if o.order_details %}
+                            <div class="text-xs text-blue-800 bg-blue-50/80 p-2.5 rounded-xl border border-blue-100 flex items-center gap-1.5">
+                                <span>👓</span>
+                                <span><strong>หมายเหตุแว่นตา:</strong> {{ o.order_details }}</span>
+                            </div>
                             {% endif %}
-                            {% endfor %}
+
+                            <div class="flex items-center gap-2 text-xs pt-1">
+                                <span class="text-slate-400">สถานะปัจจุบัน:</span>
+                                <span class="font-bold px-2.5 py-0.5 rounded-lg border 
+                                    {% if 'เสร็จ' in o.status or 'จัดส่ง' in o.status %}
+                                        bg-emerald-50 text-emerald-700 border-emerald-200
+                                    {% else %}
+                                        bg-amber-50 text-amber-700 border-amber-200
+                                    {% endif %}">
+                                    {{ o.status }}
+                                </span>
+                                {% if o.tracking_no %}
+                                <a href="https://www.flashexpress.co.th/tracking/?se={{ o.tracking_no }}" target="_blank" 
+                                   class="bg-purple-50 text-purple-700 hover:bg-purple-100 px-2.5 py-0.5 rounded-lg border border-purple-200 font-medium hover:underline flex items-center gap-1">
+                                    🚚 Flash: {{ o.tracking_no }} ↗
+                                </a>
+                                {% endif %}
+                            </div>
                         </div>
-                        <div class="p-2.5 bg-slate-100 border-t border-slate-200 flex items-center justify-between text-xs">
-                            <span class="text-[10px] text-slate-400">ลำดับ: {{ p.sort_order }}</span>
-                            <form action="/admin/delete_promotion" method="POST" class="inline" onsubmit="return confirm('ยืนยันลบโปรโมชั่น {{ p.title }}?');">
-                                <input type="hidden" name="promo_id" value="{{ p.id }}">
-                                <button type="submit" class="text-red-500 hover:text-red-700 text-xs font-medium">ลบออก</button>
+
+                        <!-- Action Buttons -->
+                        <div class="flex flex-wrap items-center gap-2 pt-2 lg:pt-0">
+                            <!-- ปุ่มแจ้งแว่นเสร็จ -->
+                            <form action="/admin/update_order" method="POST" class="inline">
+                                <input type="hidden" name="order_id" value="{{ o.id }}">
+                                <input type="hidden" name="status" value="แว่นเสร็จแล้ว (พร้อมรับที่บูท)">
+                                <button type="submit" 
+                                        class="text-xs bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white font-bold px-4 py-2.5 rounded-xl shadow-sm flex items-center gap-1.5 transition">
+                                    <span>🟢</span> แจ้งแว่นเสร็จ
+                                </button>
+                            </form>
+
+                            <!-- ปุ่มแจ้งส่ง Flash -->
+                            <form action="/admin/update_order" method="POST" class="inline flex items-center gap-1 bg-amber-50 p-1 rounded-xl border border-amber-200">
+                                <input type="hidden" name="order_id" value="{{ o.id }}">
+                                <input type="hidden" name="status" value="จัดส่งแล้ว (Flash Express)">
+                                <input type="text" name="tracking_no" placeholder="เลขพัสดุ Flash" value="{{ o.tracking_no or '' }}" 
+                                       class="text-xs px-2.5 py-1.5 border border-amber-300 rounded-lg w-28 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white">
+                                <button type="submit" 
+                                        class="text-xs bg-amber-600 hover:bg-amber-700 active:scale-98 text-white font-bold px-3 py-1.5 rounded-lg shadow-sm flex items-center gap-1 transition">
+                                    <span>🚚</span> ส่ง Flash
+                                </button>
+                            </form>
+
+                            <!-- ปุ่มร้านไปส่งเอง -->
+                            <form action="/admin/update_order" method="POST" class="inline">
+                                <input type="hidden" name="order_id" value="{{ o.id }}">
+                                <input type="hidden" name="status" value="ทางร้านกำลังเดินทางไปส่งมอบถึงมือ">
+                                <button type="submit" 
+                                        class="text-xs bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white font-bold px-3.5 py-2.5 rounded-xl shadow-sm flex items-center gap-1 transition">
+                                    <span>🚗</span> ร้านส่งเอง
+                                </button>
                             </form>
                         </div>
                     </div>
                     {% endfor %}
+                    {% else %}
+                    <div class="p-12 text-center text-slate-400 space-y-2">
+                        <span class="text-4xl block">📦</span>
+                        <p class="text-sm font-medium">ยังไม่มีออเดอร์ใหม่ในระบบ</p>
+                        <p class="text-xs text-slate-400">เมื่อลูกค้ากรอกแบบฟอร์มที่อยู่ผ่าน LINE ข้อมูลจะปรากฏที่นี่ทันที</p>
+                    </div>
+                    {% endif %}
                 </div>
-                {% else %}
-                <p class="text-xs text-slate-400 py-3 text-center">ยังไม่มีโปรโมชั่น สามารถกดเพิ่มด้านบนได้เลยครับ</p>
-                {% endif %}
             </div>
         </section>
 
-        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-            <div class="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-200 p-4 flex items-center justify-between">
-                <div>
-                    <h2 class="font-bold text-amber-950 text-base flex items-center gap-2">
-                        <span>📦</span> รายการสั่งตัดแว่น & ที่อยู่จัดส่ง (ล่าสุด)
-                    </h2>
-                    <p class="text-xs text-amber-800">กดปุ่มสีเพื่ออัปเดตสถานะและ <strong>ระบบจะยิงข้อความแจ้งเตือนเข้า LINE ลูกค้าทันที</strong></p>
-                </div>
-            </div>
-
-            <div class="divide-y divide-slate-100">
-                {% if orders %}
-                {% for o in orders %}
-                <div class="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-slate-50/50 transition">
-                    <div class="space-y-1.5 flex-1">
-                        <div class="flex flex-wrap items-center gap-2">
-                            <span class="font-bold text-slate-900 text-base">{{ o.customer_name }}</span>
-                            <a href="tel:{{ o.phone }}" class="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-0.5 rounded-full font-medium border border-emerald-200">
-                                📞 {{ o.phone }}
-                            </a>
-                            <span class="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md font-mono">#{{ o.order_no }}</span>
-                            {% if o.line_user_id %}
-                            <span class="text-xs bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-semibold">🟢 เชื่อม LINE แล้ว</span>
-                            {% else %}
-                            <span class="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">🔔 พร้อมส่งแจ้งเตือน</span>
-                            {% endif %}
-                        </div>
-
-                        <p class="text-xs text-slate-700 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
-                            <strong class="text-slate-900">📍 ที่อยู่จัดส่ง:</strong> {{ o.address }}
+        <!-- ============================================================== -->
+        <!-- TAB 2: จัดการโปรโมชั่นหน้าร้าน -->
+        <!-- ============================================================== -->
+        <section id="tab-promotions" class="tab-content hidden space-y-4">
+            <div class="bg-white rounded-3xl shadow-sm border border-orange-200 overflow-hidden">
+                <div class="bg-gradient-to-r from-orange-600 via-amber-600 to-amber-700 p-5 text-white flex flex-col md:flex-row md:items-center justify-between gap-2">
+                    <div>
+                        <h2 class="font-bold text-lg flex items-center gap-2">
+                            <span>🎁</span> จัดการแพ็กเกจโปรโมชั่น & ราคาแว่นตา
+                        </h2>
+                        <p class="text-xs text-amber-100 mt-0.5">
+                            ข้อมูลตรงนี้จะ <strong>อัปเดตเป็นการ์ด Flex Carousel ในแอป LINE ของลูกค้าทันที</strong>
                         </p>
-
-                        {% if o.order_details %}
-                        <p class="text-xs text-blue-700 bg-blue-50/60 p-2 rounded-lg border border-blue-100">
-                            <strong>👓 หมายเหตุแว่นตา:</strong> {{ o.order_details }}
-                        </p>
-                        {% endif %}
-
-                        <div class="flex items-center gap-2 text-xs pt-1">
-                            <span class="text-slate-400">สถานะปัจจุบัน:</span>
-                            <span class="font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">{{ o.status }}</span>
-                            {% if o.tracking_no %}
-                            <a href="https://www.flashexpress.co.th/tracking/?se={{ o.tracking_no }}" target="_blank" 
-                               class="bg-purple-50 text-purple-700 px-2 py-0.5 rounded border border-purple-200 font-medium hover:underline">
-                                🚚 Flash: {{ o.tracking_no }}
-                            </a>
-                            {% endif %}
-                        </div>
                     </div>
-
-                    <!-- Action buttons -->
-                    <div class="flex flex-wrap items-center gap-2 pt-2 md:pt-0">
-                        <!-- ปุ่มแจ้งแว่นเสร็จ -->
-                        <form action="/admin/update_order" method="POST" class="inline">
-                            <input type="hidden" name="order_id" value="{{ o.id }}">
-                            <input type="hidden" name="status" value="แว่นเสร็จแล้ว (พร้อมรับที่บูท)">
-                            <button type="submit" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3.5 py-2.5 rounded-xl shadow-sm flex items-center gap-1.5 transition">
-                                <span>🟢</span> แจ้งแว่นเสร็จ
-                            </button>
-                        </form>
-
-                        <!-- ปุ่มแจ้งส่ง Flash -->
-                        <form action="/admin/update_order" method="POST" class="inline flex items-center gap-1">
-                            <input type="hidden" name="order_id" value="{{ o.id }}">
-                            <input type="hidden" name="status" value="จัดส่งแล้ว (Flash Express)">
-                            <input type="text" name="tracking_no" placeholder="เลข Flash" value="{{ o.tracking_no or '' }}" 
-                                   class="text-xs px-2.5 py-2 border rounded-xl w-28 focus:outline-none focus:ring-2 focus:ring-amber-500">
-                            <button type="submit" class="text-xs bg-amber-600 hover:bg-amber-700 text-white font-bold px-3 py-2.5 rounded-xl shadow-sm flex items-center gap-1 transition">
-                                <span>🚚</span> แจ้งส่ง Flash
-                            </button>
-                        </form>
-
-                        <!-- ปุ่มร้านไปส่งเอง -->
-                        <form action="/admin/update_order" method="POST" class="inline">
-                            <input type="hidden" name="order_id" value="{{ o.id }}">
-                            <input type="hidden" name="status" value="ทางร้านกำลังเดินทางไปส่งมอบถึงมือ">
-                            <button type="submit" class="text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-2.5 rounded-xl shadow-sm flex items-center gap-1 transition">
-                                <span>🚗</span> ร้านไปส่งเอง
-                            </button>
-                        </form>
-                    </div>
-                </div>
-                {% endfor %}
-                {% else %}
-                <div class="p-8 text-center text-slate-400 text-sm">
-                    ยังไม่มีออเดอร์ใหม่ในระบบ เมื่อลูกค้ากรอกที่อยู่ผ่าน LINE ข้อมูลจะปรากฏที่นี่ทันทีครับ
-                </div>
-                {% endif %}
-            </div>
-        </section>
-
-        <!-- Section 3: ระบบบันทึกและส่งสลิปค่าสายตา (รองรับหลายคนใน LINE เดียว / สมาชิกครอบครัว) -->
-        <section class="bg-white rounded-2xl shadow-sm border border-purple-200 overflow-hidden">
-            <div class="bg-gradient-to-r from-purple-50 via-indigo-50 to-pink-50 border-b border-purple-200 p-4 flex items-center justify-between">
-                <div>
-                    <h2 class="font-bold text-purple-950 text-base flex items-center gap-2">
-                        <span>👓</span> บันทึกสลิปตรวจวัดสายตา & จัดการประวัติสมาชิกครอบครัว
-                    </h2>
-                    <p class="text-xs text-purple-800">
-                        เมื่อตรวจสายตาเสร็จ ถ่ายรูปสลิปหรือกรอกค่าสายตา กดบันทึกแล้ว <strong>ระบบจะส่งการ์ดสลิปดิจิทัลเข้า LINE ลูกค้าทันที</strong> (รองรับ 1 LINE เก็บได้หลายคน เช่น พ่อ, แม่, ลูก)
-                    </p>
-                </div>
-            </div>
-
-            <!-- Form อัปโหลดสลิป / บันทึกประวัติ -->
-            <form action="/admin/add_prescription" method="POST" enctype="multipart/form-data" class="p-5 bg-purple-50/30 space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-700 mb-1">เบอร์โทรศัพท์ลูกค้า (จำเป็น)*</label>
-                        <input type="tel" name="phone" required placeholder="08xxxxxxxx" 
-                               class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-purple-600 bg-white">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-700 mb-1">ชื่อผู้ตรวจวัดสายตา*</label>
-                        <input type="text" name="patient_name" required placeholder="เช่น น้องพีม, คุณพ่อสมชาย, คุณแม่ดาว" 
-                               class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-purple-600 bg-white">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-700 mb-1">ความสัมพันธ์ (กรณี LINE เดียวใช้หลายคน)</label>
-                        <select name="relation" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-purple-600 bg-white">
-                            <option value="เจ้าของบัญชี">เจ้าของบัญชี (ตัวเอง)</option>
-                            <option value="บุตร (ลูกสาว/ลูกชาย)">บุตร (ลูกสาว/ลูกชาย)</option>
-                            <option value="คุณพ่อ / คุณแม่">คุณพ่อ / คุณแม่</option>
-                            <option value="คู่สมรส (สามี/ภรรยา)">คู่สมรส (สามี/ภรรยา)</option>
-                            <option value="ญาติ / เพื่อน">ญาติ / เพื่อน</option>
-                        </select>
-                    </div>
+                    <span class="text-xs bg-orange-800/80 text-orange-200 px-3 py-1 rounded-full font-mono border border-orange-700 self-start md:self-auto">
+                        กำลังแสดงผล: {{ promotions|length if promotions else 0 }} รายการ
+                    </span>
                 </div>
 
-                <!-- ค่าสายตา R / L -->
-                <div class="bg-white p-4 rounded-xl border border-purple-100 space-y-3">
-                    <h3 class="text-xs font-bold text-purple-900 flex items-center gap-1">
-                        <span>🔍</span> ค่าสายตาวัดคอมพิวเตอร์ (กรอกได้ตามใบสลิป)
+                <!-- Form เพิ่มโปรโมชั่นใหม่ -->
+                <form action="/admin/add_promotion" method="POST" class="p-5 bg-orange-50/30 border-b border-orange-100 space-y-4">
+                    <h3 class="text-xs font-bold text-orange-900 uppercase tracking-wide flex items-center gap-1.5">
+                        <span>➕</span> เพิ่มแพ็กเกจโปรโมชั่นใหม่
                     </h3>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-                        <!-- ตาขวา -->
-                        <div class="p-2 bg-slate-50 rounded-lg border border-slate-200">
-                            <span class="font-bold text-slate-800">ตาขวา (R) สั้น/ยาว</span>
-                            <input type="text" name="sph_r" placeholder="เช่น -2.00 หรือ +1.50" class="w-full mt-1 px-2 py-1 border rounded bg-white">
-                        </div>
-                        <div class="p-2 bg-slate-50 rounded-lg border border-slate-200">
-                            <span class="font-bold text-slate-800">ตาขวา (R) เอียง</span>
-                            <input type="text" name="cyl_r" placeholder="เช่น -0.50" class="w-full mt-1 px-2 py-1 border rounded bg-white">
-                        </div>
-                        <div class="p-2 bg-slate-50 rounded-lg border border-slate-200">
-                            <span class="font-bold text-slate-800">ตาขวา (R) องศา</span>
-                            <input type="text" name="axis_r" placeholder="เช่น 180" class="w-full mt-1 px-2 py-1 border rounded bg-white">
-                        </div>
-                        <div class="p-2 bg-slate-50 rounded-lg border border-slate-200">
-                            <span class="font-bold text-slate-800">ตาขวา (R) ค่า Add</span>
-                            <input type="text" name="add_r" placeholder="เช่น +1.50" class="w-full mt-1 px-2 py-1 border rounded bg-white">
-                        </div>
 
-                        <!-- ตาซ้าย -->
-                        <div class="p-2 bg-slate-50 rounded-lg border border-slate-200">
-                            <span class="font-bold text-slate-800">ตาซ้าย (L) สั้น/ยาว</span>
-                            <input type="text" name="sph_l" placeholder="เช่น -2.25 หรือ +1.50" class="w-full mt-1 px-2 py-1 border rounded bg-white">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">ชื่อแพ็กเกจ*</label>
+                            <input type="text" name="title" required placeholder="เช่น ชุดตัดแว่นเริ่มต้น" 
+                                   class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white">
                         </div>
-                        <div class="p-2 bg-slate-50 rounded-lg border border-slate-200">
-                            <span class="font-bold text-slate-800">ตาซ้าย (L) เอียง</span>
-                            <input type="text" name="cyl_l" placeholder="เช่น -0.75" class="w-full mt-1 px-2 py-1 border rounded bg-white">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">ราคา (บาท)*</label>
+                            <input type="text" name="price" required placeholder="เช่น 990 หรือ 1,490" 
+                                   class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white">
                         </div>
-                        <div class="p-2 bg-slate-50 rounded-lg border border-slate-200">
-                            <span class="font-bold text-slate-800">ตาซ้าย (L) องศา</span>
-                            <input type="text" name="axis_l" placeholder="เช่น 175" class="w-full mt-1 px-2 py-1 border rounded bg-white">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">ป้ายกำกับ (Tag)</label>
+                            <input type="text" name="tag" placeholder="เช่น 🔥 โปรสุดคุ้ม ยอดนิยม" 
+                                   class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white">
                         </div>
-                        <div class="p-2 bg-slate-50 rounded-lg border border-slate-200">
-                            <span class="font-bold text-slate-800">ตาซ้าย (L) ค่า Add</span>
-                            <input type="text" name="add_l" placeholder="เช่น +1.50" class="w-full mt-1 px-2 py-1 border rounded bg-white">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">ธีมสีการ์ด & ลำดับ</label>
+                            <div class="flex gap-2">
+                                <select name="color" class="flex-1 px-3 py-2.5 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white font-medium">
+                                    <option value="#EA580C" selected>🟠 ส้มสดใส (#EA580C)</option>
+                                    <option value="#059669">🟢 เขียวเสถียร (#059669)</option>
+                                    <option value="#2563EB">🔵 น้ำเงินสมาร์ท (#2563EB)</option>
+                                    <option value="#7C3AED">🟣 ม่วงพรีเมียม (#7C3AED)</option>
+                                    <option value="#DB2777">🌸 ชมพูสดใส (#DB2777)</option>
+                                    <option value="#15803D">🌲 เขียวหรูหรา (#15803D)</option>
+                                </select>
+                                <input type="number" name="sort_order" value="1" min="1" max="99" title="ลำดับแสดงผล"
+                                       class="w-16 px-2 py-2.5 rounded-xl border border-slate-300 text-xs text-center bg-white font-mono">
+                            </div>
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1">ระยะห่างตาดำ (PD)</label>
-                            <input type="text" name="pd" placeholder="เช่น 62 mm" class="w-full px-3 py-1.5 border rounded-lg text-xs bg-white">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1">หมายเหตุเลนส์ / กรอบ</label>
-                            <input type="text" name="notes" placeholder="เช่น เลนส์โปรเกรสซีฟ Hoya 1.60 Blue / กรอบเดิม" class="w-full px-3 py-1.5 border rounded-lg text-xs bg-white">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ถ่ายรูปสลิป หรือ อัปโหลดรูป -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 items-end">
                     <div>
                         <label class="block text-xs font-semibold text-slate-700 mb-1">
-                            📸 ถ่ายรูปสลิปจากกล้องมือถือ หรือ เลือกไฟล์รูปภาพ (ใบพิมพ์คอมพิวเตอร์)
+                            รายละเอียดไฮไลท์ (พิมพ์ 1 บรรทัดต่อ 1 ข้อความ หรือใส่เครื่องหมาย ✨ ด้านหน้า)
                         </label>
-                        <input type="file" name="slip_image" accept="image/*" capture="environment"
-                               class="w-full text-xs text-slate-600 file:mr-2 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200 cursor-pointer">
+                        <textarea name="details" rows="3" placeholder="✨ กรอบแว่นแฟชั่น น้ำหนักเบา (เลือกได้ทั้งร้าน)&#10;✨ เลนส์ Multicoat สารเคลือบตัดแสงสะท้อน&#10;✨ ป้องกันรอยขีดข่วน + ภาพคมชัดสบายตา&#10;✨ ตรวจวัดสายตาฟรีด้วยระบบคอมพิวเตอร์&#10;🎁 ฟรีกล่องใส่แว่น + ผ้าเช็ดเลนส์ไมโครไฟเบอร์" 
+                                  class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white leading-relaxed"></textarea>
                     </div>
+
                     <div class="flex justify-end">
-                        <button type="submit" class="w-full md:w-auto bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold px-6 py-2.5 rounded-xl text-sm shadow-md flex items-center justify-center gap-2 transition">
-                            <span>🚀</span> บันทึก & ส่งสลิปเข้า LINE ลูกค้าทันที
+                        <button type="submit" 
+                                class="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 active:scale-98 text-white font-bold px-6 py-2.5 rounded-xl text-xs shadow-md flex items-center gap-2 transition">
+                            <span>➕</span> บันทึกแพ็กเกจนี้
                         </button>
                     </div>
-                </div>
-            </form>
+                </form>
 
-            <!-- รายการประวัติสลิปสายตาล่าสุด -->
-            <div class="p-4 space-y-3">
-                <h3 class="text-xs font-bold text-slate-600 uppercase flex items-center justify-between">
-                    <span>📋 ประวัติสลิปสายตาที่บันทึกแล้วในระบบ ({{ prescriptions|length if prescriptions else 0 }} รายการ):</span>
-                    <span class="text-xs text-purple-600 font-normal">ลูกค้ากด "สลิปสายตา" ใน LINE เพื่อเปิดดูได้ทันที</span>
-                </h3>
+                <!-- รายการโปรโมชั่นที่มีอยู่ -->
+                <div class="p-5 space-y-3">
+                    <h3 class="text-xs font-bold text-slate-600 uppercase flex items-center justify-between">
+                        <span>🏷️ แพ็กเกจที่เปิดใช้งานอยู่ในระบบ ({{ promotions|length if promotions else 0 }} รายการ):</span>
+                        <span class="text-xs text-orange-600 font-normal">ลูกค้ากด "โปรโมชั่น" ใน LINE เพื่อเลื่อนดูได้ทันที</span>
+                    </h3>
 
-                {% if prescriptions %}
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {% for p in prescriptions %}
-                    <div class="p-3 bg-white rounded-xl border border-slate-200 shadow-sm flex gap-3 hover:border-purple-300 transition">
-                        {% if p.image_url %}
-                        <a href="{{ p.image_url }}" target="_blank" class="w-20 h-24 rounded-lg overflow-hidden border border-slate-200 flex-shrink-0 bg-slate-100">
-                            <img src="{{ p.image_url }}" alt="สลิป" class="w-full h-full object-cover hover:scale-105 transition">
-                        </a>
-                        {% else %}
-                        <div class="w-20 h-24 rounded-lg border border-slate-200 flex-shrink-0 bg-purple-50 flex flex-col items-center justify-center text-purple-300 text-2xl">
-                            👓
-                        </div>
-                        {% endif %}
-
-                        <div class="flex-1 space-y-1 text-xs">
-                            <div class="flex items-center justify-between">
-                                <span class="font-bold text-slate-900 text-sm">{{ p.patient_name }}</span>
-                                <span class="bg-purple-100 text-purple-800 text-[10px] px-2 py-0.5 rounded-full font-medium">{{ p.relation }}</span>
+                    {% if promotions %}
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {% for p in promotions %}
+                        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-md hover:border-orange-300 transition">
+                            <div class="p-4 text-white" style="background-color: {{ p.color or '#EA580C' }};">
+                                <span class="text-[10px] bg-black/25 px-2 py-0.5 rounded-full font-semibold">{{ p.tag or 'HOT DEAL' }}</span>
+                                <h4 class="font-bold text-base mt-1.5 leading-snug">{{ p.title }}</h4>
+                                <p class="text-xl font-extrabold text-amber-200 mt-0.5">฿ {{ p.price }}.-</p>
                             </div>
-                            <p class="text-slate-500">📞 {{ p.phone }} • วันที่: {{ p.exam_date }}</p>
-                            <p class="text-slate-700 font-mono text-[11px]">
-                                <strong>R:</strong> {{ p.sph_r or '-' }}/{{ p.cyl_r or '-' }} 
-                                <strong class="ml-2">L:</strong> {{ p.sph_l or '-' }}/{{ p.cyl_l or '-' }}
-                                {% if p.pd %}<span class="text-blue-600 ml-1">PD: {{ p.pd }}</span>{% endif %}
-                            </p>
-                            {% if p.notes %}
-                            <p class="text-purple-700 text-[10px] bg-purple-50 px-2 py-0.5 rounded truncate">{{ p.notes }}</p>
-                            {% endif %}
-
-                            <div class="pt-1 flex items-center justify-between">
-                                {% if p.image_url %}
-                                <a href="{{ p.image_url }}" target="_blank" class="text-purple-600 hover:underline font-medium text-[11px]">
-                                    🔎 ดูรูปสลิป
-                                </a>
-                                {% else %}
-                                <span></span>
+                            <div class="p-3.5 text-xs text-slate-600 space-y-1.5 flex-1 bg-slate-50/50">
+                                {% for line in p.details.split('\n') %}
+                                {% if line.strip() %}
+                                <p class="text-[11px] leading-tight text-slate-700 flex items-start gap-1">
+                                    <span class="text-amber-500">•</span>
+                                    <span>{{ line.replace('✨', '').replace('🎁', '').strip() }}</span>
+                                </p>
                                 {% endif %}
-                                <form action="/admin/delete_prescription" method="POST" class="inline" onsubmit="return confirm('ยืนยันลบประวัตินี้?');">
-                                    <input type="hidden" name="rx_id" value="{{ p.id }}">
-                                    <button type="submit" class="text-red-500 hover:text-red-700 text-[11px]">ลบประวัติ</button>
+                                {% endfor %}
+                            </div>
+                            <div class="p-3 bg-slate-100/80 border-t border-slate-200 flex items-center justify-between text-xs">
+                                <span class="text-[11px] text-slate-400 font-mono">ลำดับ: {{ p.sort_order }}</span>
+                                <form action="/admin/delete_promotion" method="POST" class="inline" onsubmit="return confirm('ยืนยันลบโปรโมชั่น {{ p.title }}?');">
+                                    <input type="hidden" name="promo_id" value="{{ p.id }}">
+                                    <button type="submit" class="text-rose-600 hover:text-rose-800 text-xs font-medium px-2 py-1 hover:bg-rose-50 rounded-lg transition">ลบออก</button>
                                 </form>
                             </div>
                         </div>
+                        {% endfor %}
                     </div>
-                    {% endfor %}
+                    {% else %}
+                    <p class="text-xs text-slate-400 py-6 text-center">ยังไม่มีโปรโมชั่น สามารถกดเพิ่มด้านบนได้เลยครับ</p>
+                    {% endif %}
                 </div>
-                {% else %}
-                <p class="text-xs text-slate-400 py-3 text-center">ยังไม่มีประวัติสลิปสายตาในระบบ สามารถกรอกหรือถ่ายรูปสลิปด้านบนได้เลยครับ</p>
-                {% endif %}
             </div>
         </section>
 
-        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-200 p-4 flex items-center justify-between">
-                <div>
-                    <h2 class="font-bold text-blue-950 text-base flex items-center gap-2">
-                        <span>🎪</span> จัดการตารางออกบูทสัญจรของคุณพ่อ
-                    </h2>
-                    <p class="text-xs text-blue-700">ข้อมูลที่กรอกตรงนี้จะไปแสดงในปุ่ม "พิกัดบูทวันนี้" บน LINE ทันที</p>
+        <!-- ============================================================== -->
+        <!-- TAB 3: บันทึกสลิปสายตา & ประวัติครอบครัว -->
+        <!-- ============================================================== -->
+        <section id="tab-prescriptions" class="tab-content hidden space-y-4">
+            <div class="bg-white rounded-3xl shadow-sm border border-purple-200 overflow-hidden">
+                <div class="bg-gradient-to-r from-purple-900 via-indigo-950 to-purple-950 p-5 text-white flex flex-col md:flex-row md:items-center justify-between gap-2">
+                    <div>
+                        <h2 class="font-bold text-lg flex items-center gap-2">
+                            <span>👓</span> บันทึกสลิปตรวจวัดสายตาคอมพิวเตอร์ & สมาชิกครอบครัว
+                        </h2>
+                        <p class="text-xs text-purple-200 mt-0.5">
+                            ถ่ายรูปสลิปจากคอมพิวเตอร์ หรือพิมพ์ค่าสายตา แล้วกดบันทึก <strong>ระบบจะส่งการ์ดเข้า LINE ลูกค้าทันที</strong> (รองรับ 1 LINE ใช้หลายคน)
+                        </p>
+                    </div>
+                    <span class="text-xs bg-purple-800/80 text-purple-200 px-3 py-1 rounded-full font-mono border border-purple-700 self-start md:self-auto">
+                        สลิปทั้งหมด: {{ prescriptions|length if prescriptions else 0 }} รายการ
+                    </span>
                 </div>
-            </div>
 
-            <!-- Form เพิ่มบูท -->
-            <form action="/admin/add_schedule" method="POST" class="p-4 bg-slate-50 border-b border-slate-200 flex flex-col md:flex-row gap-3">
-                <input type="text" name="date_range" required placeholder="ช่วงวันที่ (เช่น 25 - 28 พ.ย. 67)" 
-                       class="flex-1 px-3 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
-                <input type="text" name="location" required placeholder="สถานที่ (เช่น งานโอทอป อิมแพ็ค บูท A12)" 
-                       class="flex-1 px-3 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
-                <input type="text" name="note" placeholder="เวลา/หมายเหตุ (เช่น 10:00 - 21:00 น.)" 
-                       class="flex-1 px-3 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
-                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2 rounded-xl text-sm whitespace-nowrap shadow">
-                    + เพิ่มพิกัดบูท
-                </button>
-            </form>
-
-            <!-- รายการบูทปัจจุบัน -->
-            <div class="p-4 space-y-2">
-                <h3 class="text-xs font-semibold text-slate-500 uppercase">พิกัดบูทที่เปิดแสดงอยู่ตอนนี้:</h3>
-                {% if schedules %}
-                <div class="grid gap-2">
-                    {% for s in schedules %}
-                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between text-sm">
+                <!-- Form บันทึกสลิป -->
+                <form action="/admin/add_prescription" method="POST" enctype="multipart/form-data" class="p-5 bg-purple-50/30 space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                         <div>
-                            <span class="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-0.5 rounded-md mr-2">{{ s.date_range }}</span>
-                            <span class="font-medium text-slate-800">{{ s.location }}</span>
-                            {% if s.note %}<span class="text-slate-500 text-xs ml-2">({{ s.note }})</span>{% endif %}
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">เบอร์โทรศัพท์ลูกค้า (10 หลัก)*</label>
+                            <input type="tel" name="phone" required placeholder="เช่น 0812345678" 
+                                   class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-purple-600 bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">ชื่อผู้ตรวจวัดสายตา*</label>
+                            <input type="text" name="patient_name" required placeholder="เช่น น้องพีม, คุณพ่อสมชาย, คุณแม่ดาว" 
+                                   class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-purple-600 bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">ความสัมพันธ์ (กรณี LINE เดียวใช้ตรวจหลายคน)</label>
+                            <select name="relation" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-purple-600 bg-white font-medium">
+                                <option value="เจ้าของบัญชี">เจ้าของบัญชี (ตัวเอง)</option>
+                                <option value="บุตร (ลูกสาว/ลูกชาย)">บุตร (ลูกสาว/ลูกชาย)</option>
+                                <option value="คุณพ่อ / คุณแม่">คุณพ่อ / คุณแม่</option>
+                                <option value="คู่สมรส (สามี/ภรรยา)">คู่สมรส (สามี/ภรรยา)</option>
+                                <option value="ญาติ / เพื่อน">ญาติ / เพื่อน</option>
+                            </select>
                         </div>
                     </div>
-                    {% endfor %}
+
+                    <!-- ค่าสายตา R / L -->
+                    <div class="bg-white p-4 rounded-2xl border border-purple-100 space-y-3">
+                        <h3 class="text-xs font-bold text-purple-900 flex items-center gap-1.5">
+                            <span>🔍</span> ค่าสายตาวัดคอมพิวเตอร์ (กรอกตามใบสลิปได้เลย)
+                        </h3>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5 text-xs">
+                            <!-- ตาขวา -->
+                            <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
+                                <span class="font-bold text-slate-800">ตาขวา (R) สั้น/ยาว</span>
+                                <input type="text" name="sph_r" placeholder="เช่น -2.00 หรือ +1.50" class="w-full mt-1 px-2.5 py-1.5 border rounded-lg bg-white text-xs">
+                            </div>
+                            <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
+                                <span class="font-bold text-slate-800">ตาขวา (R) เอียง</span>
+                                <input type="text" name="cyl_r" placeholder="เช่น -0.50" class="w-full mt-1 px-2.5 py-1.5 border rounded-lg bg-white text-xs">
+                            </div>
+                            <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
+                                <span class="font-bold text-slate-800">ตาขวา (R) องศา</span>
+                                <input type="text" name="axis_r" placeholder="เช่น 180" class="w-full mt-1 px-2.5 py-1.5 border rounded-lg bg-white text-xs">
+                            </div>
+                            <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
+                                <span class="font-bold text-slate-800">ตาขวา (R) ค่า Add</span>
+                                <input type="text" name="add_r" placeholder="เช่น +1.50" class="w-full mt-1 px-2.5 py-1.5 border rounded-lg bg-white text-xs">
+                            </div>
+
+                            <!-- ตาซ้าย -->
+                            <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
+                                <span class="font-bold text-slate-800">ตาซ้าย (L) สั้น/ยาว</span>
+                                <input type="text" name="sph_l" placeholder="เช่น -2.25 หรือ +1.50" class="w-full mt-1 px-2.5 py-1.5 border rounded-lg bg-white text-xs">
+                            </div>
+                            <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
+                                <span class="font-bold text-slate-800">ตาซ้าย (L) เอียง</span>
+                                <input type="text" name="cyl_l" placeholder="เช่น -0.75" class="w-full mt-1 px-2.5 py-1.5 border rounded-lg bg-white text-xs">
+                            </div>
+                            <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
+                                <span class="font-bold text-slate-800">ตาซ้าย (L) องศา</span>
+                                <input type="text" name="axis_l" placeholder="เช่น 175" class="w-full mt-1 px-2.5 py-1.5 border rounded-lg bg-white text-xs">
+                            </div>
+                            <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
+                                <span class="font-bold text-slate-800">ตาซ้าย (L) ค่า Add</span>
+                                <input type="text" name="add_l" placeholder="เช่น +1.50" class="w-full mt-1 px-2.5 py-1.5 border rounded-lg bg-white text-xs">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">ระยะห่างตาดำ (PD)</label>
+                                <input type="text" name="pd" placeholder="เช่น 62 mm" class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">หมายเหตุเลนส์ / กรอบ</label>
+                                <input type="text" name="notes" placeholder="เช่น เลนส์โปรเกรสซีฟ Hoya 1.60 Blue / กรอบเดิม" class="w-full px-3 py-2 border rounded-xl text-xs bg-white">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ถ่ายรูปสลิป / อัปโหลดไฟล์ -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 items-end">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">
+                                📸 ถ่ายรูปสลิปจากกล้องมือถือ หรือ เลือกไฟล์รูปภาพใบสลิป
+                            </label>
+                            <input type="file" name="slip_image" accept="image/*" capture="environment"
+                                   class="w-full text-xs text-slate-600 file:mr-2 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200 cursor-pointer">
+                        </div>
+                        <div class="flex justify-end">
+                            <button type="submit" 
+                                    class="w-full md:w-auto bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 active:scale-98 text-white font-bold px-6 py-3 rounded-xl text-xs shadow-md flex items-center justify-center gap-2 transition">
+                                <span>🚀</span> บันทึก & ส่งสลิปเข้า LINE ลูกค้าทันที
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- รายการประวัติสลิปสายตาล่าสุด -->
+                <div class="p-5 space-y-3">
+                    <h3 class="text-xs font-bold text-slate-600 uppercase flex items-center justify-between">
+                        <span>📋 ประวัติสลิปสายตาในระบบ ({{ prescriptions|length if prescriptions else 0 }} รายการ):</span>
+                        <span class="text-xs text-purple-600 font-normal">ลูกค้ากด "สลิปสายตา" ใน LINE เพื่อเปิดดูได้ตลอดเวลา</span>
+                    </h3>
+
+                    {% if prescriptions %}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                        {% for p in prescriptions %}
+                        <div class="p-3.5 bg-white rounded-2xl border border-slate-200 shadow-sm flex gap-3 hover:border-purple-300 transition">
+                            {% if p.image_url %}
+                            <a href="{{ p.image_url }}" target="_blank" class="w-20 h-24 rounded-xl overflow-hidden border border-slate-200 flex-shrink-0 bg-slate-100 block">
+                                <img src="{{ p.image_url }}" alt="สลิป" class="w-full h-full object-cover hover:scale-105 transition">
+                            </a>
+                            {% else %}
+                            <div class="w-20 h-24 rounded-xl border border-slate-200 flex-shrink-0 bg-purple-50 flex flex-col items-center justify-center text-purple-300 text-2xl">
+                                👓
+                            </div>
+                            {% endif %}
+
+                            <div class="flex-1 space-y-1 text-xs">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-bold text-slate-900 text-sm">{{ p.patient_name }}</span>
+                                    <span class="bg-purple-100 text-purple-800 text-[10px] px-2 py-0.5 rounded-full font-medium">{{ p.relation }}</span>
+                                </div>
+                                <p class="text-slate-500">📞 {{ p.phone }} • วันที่: {{ p.exam_date }}</p>
+                                <p class="text-slate-700 font-mono text-[11px]">
+                                    <strong>R:</strong> {{ p.sph_r or '-' }}/{{ p.cyl_r or '-' }} 
+                                    <strong class="ml-2">L:</strong> {{ p.sph_l or '-' }}/{{ p.cyl_l or '-' }}
+                                    {% if p.pd %}<span class="text-blue-600 ml-1">PD: {{ p.pd }}</span>{% endif %}
+                                </p>
+                                {% if p.notes %}
+                                <p class="text-purple-700 text-[10px] bg-purple-50 px-2 py-0.5 rounded truncate">{{ p.notes }}</p>
+                                {% endif %}
+
+                                <div class="pt-1 flex items-center justify-between">
+                                    {% if p.image_url %}
+                                    <a href="{{ p.image_url }}" target="_blank" class="text-purple-600 hover:underline font-medium text-[11px]">
+                                        🔎 ดูรูปสลิป
+                                    </a>
+                                    {% else %}
+                                    <span></span>
+                                    {% endif %}
+                                    <form action="/admin/delete_prescription" method="POST" class="inline" onsubmit="return confirm('ยืนยันลบประวัตินี้?');">
+                                        <input type="hidden" name="rx_id" value="{{ p.id }}">
+                                        <button type="submit" class="text-rose-500 hover:text-rose-700 text-[11px]">ลบประวัติ</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-xs text-slate-400 py-6 text-center">ยังไม่มีประวัติสลิปสายตาในระบบ</p>
+                    {% endif %}
                 </div>
-                {% else %}
-                <p class="text-xs text-slate-400 py-2">ยังไม่มีตารางบูทพิเศษ (บอทจะแสดงพิกัดร้านประจำ อาคาร B เป็นหลัก)</p>
-                {% endif %}
+            </div>
+        </section>
+
+        <!-- ============================================================== -->
+        <!-- TAB 4: ตารางบูทสัญจรของคุณพ่อ -->
+        <!-- ============================================================== -->
+        <section id="tab-schedules" class="tab-content hidden space-y-4">
+            <div class="bg-white rounded-3xl shadow-sm border border-emerald-200 overflow-hidden">
+                <div class="bg-gradient-to-r from-emerald-900 via-teal-950 to-emerald-950 p-5 text-white flex flex-col md:flex-row md:items-center justify-between gap-2">
+                    <div>
+                        <h2 class="font-bold text-lg flex items-center gap-2">
+                            <span>🎪</span> จัดการตารางออกบูทสัญจรของคุณพ่อ
+                        </h2>
+                        <p class="text-xs text-emerald-200 mt-0.5">
+                            ข้อมูลตรงนี้จะไปแสดงเมื่อลูกค้ากดปุ่ม <strong>"พิกัดบูทสัญจร"</strong> บนเมนูหลักของ LINE
+                        </p>
+                    </div>
+                    <span class="text-xs bg-emerald-800/80 text-emerald-200 px-3 py-1 rounded-full font-mono border border-emerald-700 self-start md:self-auto">
+                        จุดสัญจรทั้งหมด: {{ schedules|length if schedules else 0 }} จุด
+                    </span>
+                </div>
+
+                <!-- Form เพิ่มบูท -->
+                <form action="/admin/add_schedule" method="POST" class="p-5 bg-emerald-50/30 border-b border-emerald-100 space-y-3">
+                    <h3 class="text-xs font-bold text-emerald-900 uppercase tracking-wide flex items-center gap-1.5">
+                        <span>➕</span> เพิ่มพิกัดออกบูทใหม่
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <input type="text" name="date_range" required placeholder="ช่วงวันที่ (เช่น 25 - 28 พ.ย. 67)" 
+                               class="px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600 bg-white">
+                        <input type="text" name="location" required placeholder="สถานที่ (เช่น งานโอทอป อิมแพ็ค บูท A12)" 
+                               class="px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600 bg-white">
+                        <input type="text" name="note" placeholder="เวลา/หมายเหตุ (เช่น 10:00 - 21:00 น.)" 
+                               class="px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600 bg-white">
+                    </div>
+                    <div class="flex justify-end pt-1">
+                        <button type="submit" 
+                                class="bg-gradient-to-r from-emerald-700 to-teal-800 hover:from-emerald-800 hover:to-teal-900 active:scale-98 text-white font-bold px-6 py-2.5 rounded-xl text-xs shadow-md transition flex items-center gap-2">
+                            <span>➕</span> บันทึกพิกัดบูทนี้
+                        </button>
+                    </div>
+                </form>
+
+                <!-- รายการบูทปัจจุบัน -->
+                <div class="p-5 space-y-2">
+                    <h3 class="text-xs font-semibold text-slate-500 uppercase">พิกัดบูทที่เปิดแสดงอยู่ตอนนี้:</h3>
+                    {% if schedules %}
+                    <div class="grid gap-2.5">
+                        {% for s in schedules %}
+                        <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between text-sm hover:border-emerald-300 transition">
+                            <div class="flex items-center gap-2">
+                                <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-lg">{{ s.date_range }}</span>
+                                <span class="font-medium text-slate-800">{{ s.location }}</span>
+                                {% if s.note %}<span class="text-slate-500 text-xs">({{ s.note }})</span>{% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-xs text-slate-400 py-4 text-center">ยังไม่มีตารางบูทพิเศษ (บอทจะแสดงพิกัดร้านหลัก อาคาร B เป็นหลัก)</p>
+                    {% endif %}
+                </div>
             </div>
         </section>
     </main>
+
+    <!-- JavaScript for Tab Switching -->
+    <script>
+        function switchTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            // Remove active style from all tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+            // Show selected tab
+            const targetTab = document.getElementById('tab-' + tabName);
+            if (targetTab) {
+                targetTab.classList.remove('hidden');
+            }
+            // Mark button active
+            const targetBtn = document.getElementById('btn-tab-' + tabName);
+            if (targetBtn) {
+                targetBtn.classList.add('active');
+            }
+
+            // Save active tab in hash
+            window.location.hash = tabName;
+        }
+
+        // On page load, restore tab from hash or default to orders
+        window.addEventListener('DOMContentLoaded', () => {
+            const hash = window.location.hash.replace('#', '');
+            if (hash && document.getElementById('tab-' + hash)) {
+                switchTab(hash);
+            } else {
+                switchTab('orders');
+            }
+        });
+    </script>
 </body>
 </html>

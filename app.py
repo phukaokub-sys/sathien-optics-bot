@@ -1,8 +1,10 @@
 import os
 import json
 import re
+from functools import wraps
+from datetime import timedelta
 from dotenv import load_dotenv
-from flask import Flask, request, abort, render_template, redirect, url_for, jsonify, send_file
+from flask import Flask, request, abort, render_template, redirect, url_for, jsonify, send_file, session
 
 from linebot.v3 import WebhookHandler
 from linebot.v3.exceptions import InvalidSignatureError
@@ -29,6 +31,17 @@ from ai_advisor import ask_gemini
 load_dotenv()
 
 app = Flask(__name__)
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "sathien_secret_key_2026_optics_super_secure")
+app.permanent_session_lifetime = timedelta(days=30)
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "sathien2026").strip()
+
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get("admin_logged_in"):
+            return redirect(url_for("admin_login", next=request.url))
+        return f(*args, **kwargs)
+    return decorated_function
 
 # Initialize database
 database.init_db()
@@ -961,17 +974,57 @@ def submit_address():
 
     return jsonify({"status": "ok", "order_no": order_no})
 
+@app.route("/admin/login", methods=["GET", "POST"])
+def admin_login():
+    error = None
+    if request.method == "POST":
+        pwd = request.form.get("password", "").strip()
+        expected = os.getenv("ADMIN_PASSWORD", ADMIN_PASSWORD).strip()
+        if pwd and pwd == expected:
+            session["admin_logged_in"] = True
+            session.permanent = True
+            next_url = request.args.get("next") or "/admin"
+            return redirect(next_url)
+        else:
+            error = "รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้งครับ"
+    return render_template("admin_login.html", error=error)
+
+@app.route("/admin/logout", methods=["GET"])
+def admin_logout():
+    session.pop("admin_logged_in", None)
+    return redirect("/admin/login")
+
 @app.route("/admin", methods=["GET"])
+@admin_required
 def admin():
+    orders = database.get_recent_orders()
+    schedules = database.get_active_schedules()
+    prescriptions = database.get_all_prescriptions()
+    promotions = database.get_all_promotions()
+
+    completed_orders = sum(1 for o in orders if "เสร็จ" in o.get("status", "") or "จัดส่ง" in o.get("status", "") or "ส่งมอบ" in o.get("status", ""))
+    pending_orders = len(orders) - completed_orders
+
+    stats = {
+        "total_orders": len(orders),
+        "pending_orders": pending_orders,
+        "completed_orders": completed_orders,
+        "total_promos": len(promotions),
+        "total_rx": len(prescriptions),
+        "total_schedules": len(schedules)
+    }
+
     return render_template(
         "admin_dashboard.html",
-        orders=database.get_recent_orders(),
-        schedules=database.get_active_schedules(),
-        prescriptions=database.get_all_prescriptions(),
-        promotions=database.get_all_promotions()
+        orders=orders,
+        schedules=schedules,
+        prescriptions=prescriptions,
+        promotions=promotions,
+        stats=stats
     )
 
 @app.route("/admin/add_promotion", methods=["POST"])
+@admin_required
 def add_promotion_route():
     title = request.form.get("title", "").strip()
     price = request.form.get("price", "").strip()
@@ -988,6 +1041,7 @@ def add_promotion_route():
     return redirect("/admin")
 
 @app.route("/admin/delete_promotion", methods=["POST"])
+@admin_required
 def delete_promotion_route():
     promo_id = request.form.get("promo_id")
     if promo_id:
@@ -995,6 +1049,7 @@ def delete_promotion_route():
     return redirect("/admin")
 
 @app.route("/admin/add_prescription", methods=["POST"])
+@admin_required
 def add_prescription_route():
     import time
     phone = request.form.get("phone", "").strip()
@@ -1054,6 +1109,7 @@ def add_prescription_route():
     return redirect("/admin")
 
 @app.route("/admin/delete_prescription", methods=["POST"])
+@admin_required
 def delete_prescription_route():
     rx_id = request.form.get("rx_id")
     if rx_id:
@@ -1061,6 +1117,7 @@ def delete_prescription_route():
     return redirect("/admin")
 
 @app.route("/admin/add_schedule", methods=["POST"])
+@admin_required
 def add_schedule():
     date_range = request.form.get("date_range", "").strip()
     location = request.form.get("location", "").strip()
@@ -1070,6 +1127,7 @@ def add_schedule():
     return redirect("/admin")
 
 @app.route("/admin/update_order", methods=["POST"])
+@admin_required
 def update_order():
     order_id = request.form.get("order_id")
     status = request.form.get("status", "").strip()

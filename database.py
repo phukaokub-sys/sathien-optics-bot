@@ -300,6 +300,24 @@ def init_db():
         VALUES ('สัปดาห์นี้', 'ศูนย์ราชการเฉลิมพระเกียรติฯ อาคาร B (ร้านประจำ ชั้นล่าง ตรงข้าม AIS)', 'เปิดวันจันทร์ - ศุกร์ 08:30 - 15:00 น.', 1)
         """)
 
+    # Seed verified shop admins so alerts are delivered immediately
+    default_admins = [
+        ("Uabb7ed0d05d8b7fc7acfa833b8f35825", "คุณภูเขา (แอดมิน)", "ผู้ดูแลระบบ"),
+        ("U1e144d473da3315db0e73ba163ea97f2", "คุณนก (เสถียรการแว่น)", "เจ้าของร้าน/ผู้จัดการ")
+    ]
+    for uid, adm_name, adm_role in default_admins:
+        cursor.execute("""
+        INSERT INTO admin_subscribers (line_user_id, name, role, is_active)
+        VALUES (?, ?, ?, 1)
+        ON CONFLICT(line_user_id) DO UPDATE SET
+            name = excluded.name,
+            role = excluded.role,
+            is_active = 1
+        """, (uid, adm_name, adm_role))
+
+    # Clean up dummy test subscribers
+    cursor.execute("DELETE FROM admin_subscribers WHERE line_user_id LIKE 'Utest_%'")
+
     conn.commit()
     conn.close()
     print("Database initialized successfully at:", DB_PATH)
@@ -328,6 +346,14 @@ def get_latest_line_user():
     row = cursor.fetchone()
     conn.close()
     return row["user_id"] if row else ""
+
+def get_all_line_users():
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT user_id, display_name, phone, last_seen FROM line_users ORDER BY last_seen DESC LIMIT 30")
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
 
 def link_user_phone(phone, user_id):
     if not phone or not user_id:

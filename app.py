@@ -1145,7 +1145,7 @@ def notify_all_admins(alert_text, flex_message=None):
         count = 0
         for admin in admins:
             uid = admin.get("line_user_id")
-            if not uid:
+            if not uid or uid.startswith("Utest_"):
                 continue
             try:
                 msgs = [flex_message] if flex_message else [TextMessage(text=alert_text)]
@@ -1195,9 +1195,10 @@ def get_reply_for_text(user_msg, user_id=""):
             f"🎉 ยินดีต้อนรับ '{admin_name}' เข้าสู่ระบบรับแจ้งเตือนร้านเสถียรการแว่นครับ! 👓\n\n"
             f"🔔 ระบบบันทึกบัญชี LINE ของท่านเรียบร้อยแล้ว\n"
             f"ตั้งแต่นี้เป็นต้นไป ระบบจะ ยิงข้อความเด้งเข้า LINE นี้ทันที เมื่อ:\n"
-            f"1. 📦 มีลูกค้ากรอกที่อยู่จัดส่งแว่นตาใหม่\n"
-            f"2. 📄 มีลูกค้าทักขอสลิปสายตา / ประวัติสายตา\n\n"
-            f"คุณเสถียรและคุณนกไม่ต้องคอยเปิดคอมหรือเปิดหน้าเว็บเช็คเลยครับ ระบบจะส่งเตือนให้ทันที! ✨"
+            f"1. 📅 มีลูกค้านัดคิวตรวจวัดสายตาใหม่ (บ้าน/ศูนย์ราชการ)\n"
+            f"2. 📦 มีลูกค้ากรอกที่อยู่จัดส่งแว่นตาใหม่\n"
+            f"3. 📄 มีลูกค้าทักขอสลิปสายตา / ประวัติสายตา\n\n"
+            f"คุณเสถียร คุณนก และทีมงานไม่ต้องคอยเปิดคอมหรือเปิดหน้าเว็บเช็คเลยครับ ระบบจะส่งเตือนพร้อมปุ่มกดโทรหาลูกค้าได้ทันทีครับ! ✨"
         )
         return TextMessage(text=confirm_reply)
 
@@ -1620,6 +1621,7 @@ def admin():
         promotions=promotions,
         admin_subscribers=admin_subscribers,
         appointments=appointments,
+        line_users=database.get_all_line_users(),
         stats=stats
     )
 
@@ -1789,13 +1791,34 @@ def update_order():
 
     return redirect("/admin")
 
+@app.route("/admin/add_subscriber", methods=["POST"])
+@admin_required
+def add_subscriber_route():
+    line_user_id = request.form.get("line_user_id", "").strip()
+    name = request.form.get("name", "แอดมิน").strip()
+    role = request.form.get("role", "ผู้ดูแลร้าน").strip()
+    if line_user_id:
+        database.register_admin_subscriber(line_user_id, name=name, role=role)
+        # Send instant welcome message to the registered admin
+        try:
+            messaging_api = get_messaging_api()
+            messaging_api.push_message(
+                PushMessageRequest(
+                    to=line_user_id,
+                    messages=[TextMessage(text=f"🎉 ยินดีต้อนรับ '{name}' เข้าสู่ระบบรับแจ้งเตือนร้านเสถียรการแว่นครับ!\n\n🔔 เมื่อมีออเดอร์ใหม่ หรือมีลูกค้านัดคิวตรวจวัดสายตา ระบบจะส่งข้อความแจ้งเตือนมายัง LINE นี้ทันทีครับ 👓")]
+                )
+            )
+        except Exception as e:
+            print(f"[WARN] Could not send welcome push to new admin {line_user_id}: {e}")
+    return redirect("/admin#subscribers")
+
 @app.route("/admin/delete_subscriber", methods=["POST"])
 @admin_required
 def delete_subscriber_route():
     sub_id = request.form.get("subscriber_id")
     if sub_id:
         database.delete_admin_subscriber(int(sub_id))
-    return redirect("/admin")
+    return redirect("/admin#subscribers")
 
 @app.route("/admin/test_notify", methods=["POST"])
 @admin_required

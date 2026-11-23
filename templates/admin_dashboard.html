@@ -686,9 +686,66 @@
                             <span class="w-7 h-7 rounded-xl bg-rose-500/20 text-rose-300 flex items-center justify-center text-xs font-bold">3</span>
                             <span class="text-sm font-bold text-white">เริ่มรับแจ้งเตือนทันที</span>
                         </div>
-                        <p class="text-xs text-slate-300 mt-2">บอทจะตอบยืนยัน และส่งข้อความเด้งเตือนทุกครั้งที่มีออเดอร์หรือสลิปใหม่ตลอด 24 ชม.</p>
+                        <p class="text-xs text-slate-300 mt-2">บอทจะตอบยืนยัน และส่งข้อความเด้งเตือนเข้า LINE ทันทีเมื่อมี <b>คิวนัดตรวจสายตาใหม่</b> หรือ <b>ออเดอร์ใหม่</b> ตลอด 24 ชม.</p>
                     </div>
                 </div>
+            </div>
+
+            <!-- Add Admin Form Card -->
+            <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold text-lg">
+                            ➕
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-sm md:text-base">เพิ่มแอดมินรับแจ้งเตือนใหม่</h3>
+                            <p class="text-xs text-slate-400">เพิ่มสิทธิ์รับข้อความเด้งเตือนทาง LINE โดยตรงไม่ต้องพิมพ์ในแชท</p>
+                        </div>
+                    </div>
+                </div>
+
+                <form method="POST" action="/admin/add_subscriber" class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">ชื่อแอดมิน / ผู้ดูแล *</label>
+                        <input type="text" name="name" required placeholder="เช่น คุณเสถียร หรือ คุณนก"
+                               class="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500 text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">บทบาท / ตำแหน่ง *</label>
+                        <select name="role" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500 text-xs bg-white">
+                            <option value="เจ้าของร้าน/ผู้จัดการ">เจ้าของร้าน / ผู้จัดการ</option>
+                            <option value="ช่างแว่นผู้เชี่ยวชาญ">ช่างแว่นผู้เชี่ยวชาญ</option>
+                            <option value="ผู้ดูแลระบบ">ผู้ดูแลระบบ</option>
+                            <option value="แอดมินตอบแชท">แอดมินตอบแชท</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">LINE User ID หรือเลือกจากผู้ใช้ *</label>
+                        <div class="space-y-1">
+                            <input type="text" id="add_line_user_id" name="line_user_id" required placeholder="เช่น Uabb7ed..."
+                                   class="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500 text-xs font-mono">
+                            {% if line_users %}
+                            <select onchange="if(this.value) document.getElementById('add_line_user_id').value = this.value;"
+                                    class="w-full px-2 py-1.5 rounded-lg border border-slate-200 text-[11px] text-slate-600 bg-slate-50">
+                                <option value="">-- หรือคลิกเลือกจากผู้ใช้งานล่าสุด --</option>
+                                {% for u in line_users %}
+                                <option value="{{ u.user_id }}">
+                                    {{ u.display_name if u.display_name else 'ลูกค้า/ผู้ใช้' }} ({{ u.phone if u.phone else u.user_id[:10] ~ '...' }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="flex items-end">
+                        <button type="submit"
+                                class="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow transition flex items-center justify-center gap-2 cursor-pointer h-[42px]">
+                            <span>➕</span>
+                            <span>บันทึกแอดมิน</span>
+                        </button>
+                    </div>
+                </form>
             </div>
 
             <!-- Registered Admins Table -->

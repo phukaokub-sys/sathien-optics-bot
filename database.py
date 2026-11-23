@@ -1,8 +1,135 @@
 import sqlite3
 import os
+import json
+import base64
+import threading
+import urllib.request
+import urllib.error
 from datetime import datetime
+from dotenv import load_dotenv
+
+load_dotenv()
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "sathien_optics.db")
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "").strip()
+GITHUB_REPO = os.getenv("GITHUB_REPO", "").strip()
+GITHUB_DB_BRANCH = os.getenv("GITHUB_DB_BRANCH", "db-storage").strip()
+
+def restore_db_from_cloud():
+    """
+    Downloads the persistent database file from GitHub cloud storage branch on startup.
+    This prevents database wipeout when Render spins up a new container or redeploys!
+    """
+    token = os.getenv("GITHUB_TOKEN", GITHUB_TOKEN).strip()
+    repo = os.getenv("GITHUB_REPO", GITHUB_REPO).strip()
+    branch = os.getenv("GITHUB_DB_BRANCH", GITHUB_DB_BRANCH).strip()
+
+    if not token or not repo:
+        print("[INFO] Cloud DB persistence not configured (GITHUB_TOKEN/GITHUB_REPO unset). Using local SQLite.")
+        return False
+
+    try:
+        url = f"https://api.github.com/repos/{repo}/contents/sathien_optics.db?ref={branch}"
+        req = urllib.request.Request(
+            url,
+            headers={
+                "Authorization": f"token {token}",
+                "Accept": "application/vnd.github.v3+json",
+                "User-Agent": "Sathien-Optics-Bot"
+            }
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            raw_b64 = data.get("content", "")
+            if raw_b64:
+                db_bytes = base64.b64decode(raw_b64)
+                with open(DB_PATH, "wb") as f:
+                    f.write(db_bytes)
+                print(f"[SUCCESS] Restored {len(db_bytes)} bytes of sathien_optics.db from cloud branch '{branch}'!")
+                return True
+    except urllib.error.HTTPError as he:
+        if he.code == 404:
+            print(f"[INFO] Cloud branch '{branch}' has no sathien_optics.db yet. Initializing fresh.")
+        else:
+            print(f"[WARN] HTTP {he.code} while restoring database from cloud: {he}")
+    except Exception as e:
+        print(f"[WARN] Could not restore database from cloud: {e}")
+
+    return False
+
+
+def backup_db_to_cloud():
+    """
+    Uploads the latest SQLite database file to GitHub cloud storage branch.
+    """
+    token = os.getenv("GITHUB_TOKEN", GITHUB_TOKEN).strip()
+    repo = os.getenv("GITHUB_REPO", GITHUB_REPO).strip()
+    branch = os.getenv("GITHUB_DB_BRANCH", GITHUB_DB_BRANCH).strip()
+
+    if not token or not repo or not os.path.exists(DB_PATH):
+        return False
+
+    try:
+        # 1. Read local DB
+        with open(DB_PATH, "rb") as f:
+            content_b64 = base64.b64encode(f.read()).decode("utf-8")
+
+        # 2. Get current SHA if file exists
+        sha = None
+        get_url = f"https://api.github.com/repos/{repo}/contents/sathien_optics.db?ref={branch}"
+        get_req = urllib.request.Request(
+            get_url,
+            headers={
+                "Authorization": f"token {token}",
+                "Accept": "application/vnd.github.v3+json",
+                "User-Agent": "Sathien-Optics-Bot"
+            }
+        )
+        try:
+            with urllib.request.urlopen(get_req, timeout=8) as r:
+                meta = json.loads(r.read().decode("utf-8"))
+                sha = meta.get("sha")
+        except urllib.error.HTTPError as he:
+            if he.code != 404:
+                print(f"[WARN] Error fetching remote SHA for backup: {he.code}")
+
+        # 3. Put file to GitHub
+        payload = {
+            "message": "Automated SQLite database cloud backup [skip ci]",
+            "content": content_b64,
+            "branch": branch
+        }
+        if sha:
+            payload["sha"] = sha
+
+        put_url = f"https://api.github.com/repos/{repo}/contents/sathien_optics.db"
+        put_req = urllib.request.Request(
+            put_url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={
+                "Authorization": f"token {token}",
+                "Accept": "application/vnd.github.v3+json",
+                "Content-Type": "application/json",
+                "User-Agent": "Sathien-Optics-Bot"
+            },
+            method="PUT"
+        )
+        with urllib.request.urlopen(put_req, timeout=12) as r:
+            res = json.loads(r.read().decode("utf-8"))
+            commit_sha = res.get("commit", {}).get("sha", "")[:8]
+            print(f"[SUCCESS] Database backed up to cloud branch '{branch}' (Commit: {commit_sha})")
+            return True
+    except Exception as e:
+        print(f"[WARN] Failed to backup database to cloud: {e}")
+        return False
+
+
+def async_backup_db():
+    """
+    Triggers asynchronous backup in a daemon thread so it never blocks web requests.
+    """
+    threading.Thread(target=backup_db_to_cloud, daemon=True).start()
+
 
 def get_db():
     conn = sqlite3.connect(DB_PATH)
@@ -10,6 +137,9 @@ def get_db():
     return conn
 
 def init_db():
+    # Attempt restore from cloud storage before opening db
+    restore_db_from_cloud()
+
     conn = get_db()
     cursor = conn.cursor()
 
@@ -217,6 +347,7 @@ def create_order(line_user_id, customer_name, phone, address, order_details=""):
     """, (order_no, line_user_id, customer_name, phone, address, order_details))
     conn.commit()
     conn.close()
+    async_backup_db()
     return order_no
 
 def get_order_by_phone(phone):
@@ -245,6 +376,7 @@ def update_order_status(order_id, status, tracking_no=""):
     """, (status, tracking_no, order_id))
     conn.commit()
     conn.close()
+    async_backup_db()
 
 # Booth schedule functions
 def get_active_schedules():
@@ -264,6 +396,7 @@ def add_booth_schedule(date_range, location, note=""):
     """, (date_range, location, note))
     conn.commit()
     conn.close()
+    async_backup_db()
 
 # Prescription & Family Member Eye Exam functions
 def add_prescription(line_user_id, phone, customer_name, patient_name, relation, 
@@ -304,6 +437,7 @@ def add_prescription(line_user_id, phone, customer_name, patient_name, relation,
     rx_id = cursor.lastrowid
     conn.commit()
     conn.close()
+    async_backup_db()
     return rx_id, line_user_id
 
 def get_prescriptions_by_user(user_id=None, phone=None):
@@ -355,6 +489,7 @@ def delete_prescription(rx_id):
     cursor.execute("DELETE FROM prescriptions WHERE id = ?", (rx_id,))
     conn.commit()
     conn.close()
+    async_backup_db()
 
 # Promotion functions
 def get_active_promotions():
@@ -383,6 +518,7 @@ def add_promotion(title, price, tag, color="#EA580C", details="", sort_order=0):
     promo_id = cursor.lastrowid
     conn.commit()
     conn.close()
+    async_backup_db()
     return promo_id
 
 def update_promotion(promo_id, title, price, tag, color="#EA580C", details="", is_active=1):
@@ -395,6 +531,7 @@ def update_promotion(promo_id, title, price, tag, color="#EA580C", details="", i
     """, (title, price, tag, color, details, is_active, promo_id))
     conn.commit()
     conn.close()
+    async_backup_db()
 
 def delete_promotion(promo_id):
     conn = get_db()
@@ -402,6 +539,7 @@ def delete_promotion(promo_id):
     cursor.execute("DELETE FROM promotions WHERE id = ?", (promo_id,))
     conn.commit()
     conn.close()
+    async_backup_db()
 
 # Admin subscriber functions
 def register_admin_subscriber(line_user_id, name="แอดมิน", role="ผู้ดูแลร้าน"):
@@ -419,6 +557,7 @@ def register_admin_subscriber(line_user_id, name="แอดมิน", role="ผ
     """, (line_user_id, name, role))
     conn.commit()
     conn.close()
+    async_backup_db()
     return True
 
 def get_active_admin_subscribers():
@@ -443,6 +582,7 @@ def delete_admin_subscriber(subscriber_id):
     cursor.execute("DELETE FROM admin_subscribers WHERE id = ?", (subscriber_id,))
     conn.commit()
     conn.close()
+    async_backup_db()
 
 def toggle_admin_subscriber(subscriber_id, is_active):
     conn = get_db()
@@ -450,6 +590,7 @@ def toggle_admin_subscriber(subscriber_id, is_active):
     cursor.execute("UPDATE admin_subscribers SET is_active = ? WHERE id = ?", (is_active, subscriber_id))
     conn.commit()
     conn.close()
+    async_backup_db()
 
 if __name__ == "__main__":
     init_db()

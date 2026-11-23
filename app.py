@@ -543,7 +543,7 @@ def get_promotion_flex():
                         "height": "sm",
                         "action": {
                             "type": "message",
-                            "label": "💬 ปรึกษา / สอบถามคุณนก",
+                            "label": "💬 ปรึกษาคุณนก",
                             "text": f"สนใจ{title} ครับ"[:20]
                         }
                     },
@@ -846,12 +846,185 @@ def get_appointment_flex():
     return FlexMessage(alt_text="นัดตรวจวัดสายตา เสถียรการแว่น", contents=FlexContainer.from_json(json.dumps(bubble_json)))
 
 
+def build_order_alert_flex(order):
+    order_no = order.get("order_no", "-")
+    name = order.get("customer_name", "-")
+    phone = order.get("phone", "-")
+    address = order.get("address", "-")
+    details = order.get("order_details", "ตัดประกอบแว่นตา")
+
+    call_label = f"📞 โทรหา {name}"
+    if len(call_label) > 20:
+        call_label = call_label[:20]
+
+    bubble = {
+        "type": "bubble",
+        "header": {
+            "type": "box",
+            "layout": "vertical",
+            "backgroundColor": "#DC2626",
+            "contents": [
+                {"type": "text", "text": "🚨 มีออเดอร์ใหม่จัดส่ง!", "weight": "bold", "color": "#FEE2E2", "size": "sm"},
+                {"type": "text", "text": f"ออเดอร์ #{order_no}", "weight": "bold", "color": "#FFFFFF", "size": "xl", "margin": "xs"}
+            ]
+        },
+        "body": {
+            "type": "box",
+            "layout": "vertical",
+            "spacing": "sm",
+            "contents": [
+                {
+                    "type": "box",
+                    "layout": "vertical",
+                    "backgroundColor": "#FEF2F2",
+                    "cornerRadius": "md",
+                    "paddingAll": "md",
+                    "contents": [
+                        {"type": "text", "text": f"👤 คุณ: {name}", "weight": "bold", "size": "md", "color": "#991B1B"},
+                        {"type": "text", "text": f"📞 โทร: {phone}", "weight": "bold", "size": "sm", "color": "#1E293B", "margin": "xs"},
+                        {"type": "separator", "margin": "sm"},
+                        {"type": "text", "text": "🏠 ที่อยู่จัดส่ง:", "size": "xs", "weight": "bold", "color": "#64748B", "margin": "sm"},
+                        {"type": "text", "text": address, "size": "xs", "color": "#334155", "wrap": True, "margin": "xs"},
+                        {"type": "separator", "margin": "sm"},
+                        {"type": "text", "text": f"👓 รายละเอียด: {details}", "size": "xs", "color": "#475569", "wrap": True, "margin": "sm"}
+                    ]
+                }
+            ]
+        },
+        "footer": {
+            "type": "box",
+            "layout": "vertical",
+            "spacing": "sm",
+            "contents": [
+                {
+                    "type": "button",
+                    "style": "primary",
+                    "color": "#DC2626",
+                    "height": "sm",
+                    "action": {
+                        "type": "uri",
+                        "label": call_label,
+                        "uri": f"tel:{phone}"
+                    }
+                }
+            ]
+        }
+    }
+    return FlexMessage(alt_text=f"🚨 [มีออเดอร์ใหม่] {name} ({phone})", contents=FlexContainer.from_json(json.dumps(bubble)))
+
+
+def build_prescription_alert_flex(user_msg, user_id="", user_name=""):
+    bubble = {
+        "type": "bubble",
+        "header": {
+            "type": "box",
+            "layout": "vertical",
+            "backgroundColor": "#7C3AED",
+            "contents": [
+                {"type": "text", "text": "📄 ลูกค้าทักขอสลิปสายตา!", "weight": "bold", "color": "#EDE9FE", "size": "sm"},
+                {"type": "text", "text": "แจ้งเตือนคุณเสถียร/คุณนก", "weight": "bold", "color": "#FFFFFF", "size": "xl", "margin": "xs"}
+            ]
+        },
+        "body": {
+            "type": "box",
+            "layout": "vertical",
+            "spacing": "sm",
+            "contents": [
+                {
+                    "type": "box",
+                    "layout": "vertical",
+                    "backgroundColor": "#F5F3FF",
+                    "cornerRadius": "md",
+                    "paddingAll": "md",
+                    "contents": [
+                        {"type": "text", "text": f"👤 ผู้ทัก: {user_name if user_name else 'ลูกค้าใน LINE'}", "weight": "bold", "size": "sm", "color": "#5B21B6"},
+                        {"type": "text", "text": f"💬 ข้อความ: \"{user_msg}\"", "size": "xs", "color": "#1E293B", "wrap": True, "margin": "xs"},
+                        {"type": "separator", "margin": "sm"},
+                        {"type": "text", "text": "💡 ลูกค้าต้องการดูสลิปผลวัดสายตาเดิม หรือขอใบประวัติ คุณนก/คุณเสถียรสามารถค้นใบวัดสายตา แล้วถ่ายรูปส่งให้ในแชทนี้ได้เลยครับ 😊", "size": "xs", "color": "#6D28D9", "wrap": True, "margin": "sm"}
+                    ]
+                }
+            ]
+        }
+    }
+    return FlexMessage(alt_text=f"📄 [ลูกค้าขอสลิปสายตา] {user_msg[:30]}", contents=FlexContainer.from_json(json.dumps(bubble)))
+
+
+def notify_all_admins(alert_text, flex_message=None):
+    """
+    Sends instant push alert to all registered admin LINE accounts.
+    """
+    try:
+        admins = database.get_active_admin_subscribers()
+        if not admins:
+            print("[INFO] No active admin subscribers registered.")
+            return 0
+
+        messaging_api = get_messaging_api()
+        count = 0
+        for admin in admins:
+            uid = admin.get("line_user_id")
+            if not uid:
+                continue
+            try:
+                msgs = [flex_message] if flex_message else [TextMessage(text=alert_text)]
+                messaging_api.push_message(
+                    PushMessageRequest(
+                        to=uid,
+                        messages=msgs
+                    )
+                )
+                count += 1
+                print(f"[SUCCESS] Pushed admin alert to {admin.get('name', 'Admin')} ({uid[:8]}...)")
+            except Exception as err:
+                print(f"[WARN] Failed to push to admin {uid}: {err}")
+        return count
+    except Exception as e:
+        print(f"[ERROR] notify_all_admins failed: {e}")
+        return 0
+
+
 def get_reply_for_text(user_msg, user_id=""):
     # Record user active state
     if user_id:
         database.record_line_user(user_id)
 
-    msg_lower = user_msg.lower()
+    msg_clean = user_msg.strip()
+    msg_lower = msg_clean.lower()
+
+    # 0. Admin Registration & Alert Subscription (#แอดมิน, #admin, ลงทะเบียนแอดมิน, #เสถียร, #นก)
+    if msg_clean.startswith("#แอดมิน") or msg_lower.startswith("#admin") or msg_clean in ["#สมัครแอดมิน", "ลงทะเบียนแอดมิน", "#เสถียร", "#นก"]:
+        parts = msg_clean.split(maxsplit=1)
+        admin_name = ""
+        if len(parts) > 1:
+            admin_name = parts[1].strip()
+        elif "#เสถียร" in msg_clean:
+            admin_name = "คุณเสถียร"
+        elif "#นก" in msg_clean:
+            admin_name = "คุณนก"
+        else:
+            try:
+                prof = get_messaging_api().get_profile(user_id)
+                admin_name = prof.display_name
+            except Exception:
+                admin_name = "แอดมินร้าน"
+
+        database.register_admin_subscriber(user_id, name=admin_name, role="ผู้ดูแลร้าน")
+        confirm_reply = (
+            f"🎉 ยินดีต้อนรับ '{admin_name}' เข้าสู่ระบบรับแจ้งเตือนร้านเสถียรการแว่นครับ! 👓\n\n"
+            f"🔔 ระบบบันทึกบัญชี LINE ของท่านเรียบร้อยแล้ว\n"
+            f"ตั้งแต่นี้เป็นต้นไป ระบบจะ ยิงข้อความเด้งเข้า LINE นี้ทันที เมื่อ:\n"
+            f"1. 📦 มีลูกค้ากรอกที่อยู่จัดส่งแว่นตาใหม่\n"
+            f"2. 📄 มีลูกค้าทักขอสลิปสายตา / ประวัติสายตา\n\n"
+            f"คุณเสถียรและคุณนกไม่ต้องคอยเปิดคอมหรือเปิดหน้าเว็บเช็คเลยครับ ระบบจะส่งเตือนให้ทันที! ✨"
+        )
+        return TextMessage(text=confirm_reply)
+
+    if msg_clean in ["#ยกเลิกแอดมิน", "#ยกเลิกรับแจ้งเตือน", "#unsubscribe"]:
+        admins = database.get_all_admin_subscribers()
+        for a in admins:
+            if a["line_user_id"] == user_id:
+                database.delete_admin_subscriber(a["id"])
+        return TextMessage(text="🔕 ยกเลิกการรับแจ้งเตือนสำหรับบัญชี LINE นี้เรียบร้อยแล้วครับ หากต้องการเปิดใหม่สามารถพิมพ์ #แอดมิน ได้ทุกเมื่อครับ")
 
     # 1. Check if user typed a phone number (8-10 digits) to track order
     clean_digits = re.sub(r"[^0-9]", "", user_msg)
@@ -878,6 +1051,23 @@ def get_reply_for_text(user_msg, user_id=""):
 
     # 5. Prescription Slip Inquiry
     elif any(k in user_msg for k in ["สลิป", "ใบวัด", "ขอประวัติ", "ค่าสายตา"]):
+        # Instant admin push alert to Khun Nok and Khun Sathien
+        try:
+            user_display_name = ""
+            if user_id:
+                try:
+                    prof = get_messaging_api().get_profile(user_id)
+                    user_display_name = prof.display_name
+                except Exception:
+                    pass
+            rx_alert_flex = build_prescription_alert_flex(user_msg, user_id=user_id, user_name=user_display_name)
+            notify_all_admins(
+                alert_text=f"📄 [ลูกค้าขอสลิปสายตา] {user_display_name or 'ลูกค้า'}: \"{user_msg}\"",
+                flex_message=rx_alert_flex
+            )
+        except Exception as e:
+            print(f"[WARN] Failed to trigger prescription alert to admins: {e}")
+
         return get_prescription_flex(user_id=user_id)
 
     # 6. Store Location / Maps
@@ -1099,6 +1289,23 @@ def submit_address():
         except Exception as e:
             print(f"[WARN] Failed to push confirmation: {e}")
 
+    # Instant admin push notification to Khun Nok and Khun Sathien
+    try:
+        order_dict = {
+            "order_no": order_no,
+            "customer_name": name,
+            "phone": phone,
+            "address": addr,
+            "order_details": details
+        }
+        order_alert_flex = build_order_alert_flex(order_dict)
+        notify_all_admins(
+            alert_text=f"🚨 [มีออเดอร์ใหม่] คุณ {name} ({phone})\nที่อยู่: {addr}\nรหัส: {order_no}\nรายละเอียด: {details or 'ตัดประกอบแว่นตา'}",
+            flex_message=order_alert_flex
+        )
+    except Exception as alert_err:
+        print(f"[WARN] Failed to send admin order push alert: {alert_err}")
+
     return jsonify({"status": "ok", "order_no": order_no})
 
 @app.route("/admin/login", methods=["GET", "POST"])
@@ -1128,6 +1335,7 @@ def admin():
     schedules = database.get_active_schedules()
     prescriptions = database.get_all_prescriptions()
     promotions = database.get_all_promotions()
+    admin_subscribers = database.get_all_admin_subscribers()
 
     completed_orders = sum(1 for o in orders if "เสร็จ" in o.get("status", "") or "จัดส่ง" in o.get("status", "") or "ส่งมอบ" in o.get("status", ""))
     pending_orders = len(orders) - completed_orders
@@ -1138,7 +1346,8 @@ def admin():
         "completed_orders": completed_orders,
         "total_promos": len(promotions),
         "total_rx": len(prescriptions),
-        "total_schedules": len(schedules)
+        "total_schedules": len(schedules),
+        "total_subscribers": len([s for s in admin_subscribers if s.get("is_active")])
     }
 
     return render_template(
@@ -1147,6 +1356,7 @@ def admin():
         schedules=schedules,
         prescriptions=prescriptions,
         promotions=promotions,
+        admin_subscribers=admin_subscribers,
         stats=stats
     )
 
@@ -1298,6 +1508,25 @@ def update_order():
                 print(f"[WARN] Failed to send order status push: {e}")
 
     return redirect("/admin")
+
+@app.route("/admin/delete_subscriber", methods=["POST"])
+@admin_required
+def delete_subscriber_route():
+    sub_id = request.form.get("subscriber_id")
+    if sub_id:
+        database.delete_admin_subscriber(int(sub_id))
+    return redirect("/admin")
+
+@app.route("/admin/test_notify", methods=["POST"])
+@admin_required
+def test_notify_route():
+    try:
+        count = notify_all_admins(
+            alert_text="🧪 [ทดสอบระบบแจ้งเตือนร้านเสถียรการแว่น]\nการเชื่อมต่อสมบูรณ์! เมื่อมีออเดอร์ใหม่หรือลูกค้าขอสลิป ข้อความจะเด้งเข้า LINE นี้ทันทีครับ 👓"
+        )
+        return jsonify({"status": "ok", "sent_count": count})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route("/booth-card", methods=["GET"])
 def booth_card():

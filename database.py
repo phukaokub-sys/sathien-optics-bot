@@ -132,6 +132,18 @@ def init_db():
     );
     """)
 
+    # 6. Admin subscribers table (Receives instant LINE push notifications for orders/slips)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS admin_subscribers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        line_user_id TEXT UNIQUE NOT NULL,
+        name TEXT DEFAULT 'แอดมิน',
+        role TEXT DEFAULT 'ผู้ดูแลร้าน',
+        is_active INTEGER DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    """)
+
     # Seed default booth schedule if empty
     cursor.execute("SELECT COUNT(*) FROM booth_schedules")
     if cursor.fetchone()[0] == 0:
@@ -388,6 +400,54 @@ def delete_promotion(promo_id):
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("DELETE FROM promotions WHERE id = ?", (promo_id,))
+    conn.commit()
+    conn.close()
+
+# Admin subscriber functions
+def register_admin_subscriber(line_user_id, name="แอดมิน", role="ผู้ดูแลร้าน"):
+    if not line_user_id:
+        return False
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+    INSERT INTO admin_subscribers (line_user_id, name, role, is_active)
+    VALUES (?, ?, ?, 1)
+    ON CONFLICT(line_user_id) DO UPDATE SET
+        name = CASE WHEN excluded.name != '' THEN excluded.name ELSE name END,
+        role = CASE WHEN excluded.role != '' THEN excluded.role ELSE role END,
+        is_active = 1
+    """, (line_user_id, name, role))
+    conn.commit()
+    conn.close()
+    return True
+
+def get_active_admin_subscribers():
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, line_user_id, name, role, created_at FROM admin_subscribers WHERE is_active = 1")
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def get_all_admin_subscribers():
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, line_user_id, name, role, is_active, created_at FROM admin_subscribers ORDER BY created_at DESC")
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def delete_admin_subscriber(subscriber_id):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM admin_subscribers WHERE id = ?", (subscriber_id,))
+    conn.commit()
+    conn.close()
+
+def toggle_admin_subscriber(subscriber_id, is_active):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE admin_subscribers SET is_active = ? WHERE id = ?", (is_active, subscriber_id))
     conn.commit()
     conn.close()
 

@@ -61,53 +61,56 @@ def get_messaging_api():
 # FLEX MESSAGE BUILDERS (Labels <= 20 Chars)
 # ==========================================
 
-def get_store_location_flex():
-    bubble_json = {
+def get_store_location_flex(user_id=""):
+    booking_home_url = f"{BASE_URL}/form/booking?loc=home"
+    if user_id:
+        booking_home_url += f"&userId={user_id}"
+
+    # Bubble 1: ศูนย์ราชการ อาคาร B
+    bubble_gov = {
         "type": "bubble",
         "header": {
             "type": "box",
             "layout": "vertical",
             "backgroundColor": "#059669",
             "contents": [
-                {"type": "text", "text": "🏢 เสถียรการแว่น (ร้านหลัก)", "weight": "bold", "color": "#D1FAE5", "size": "md"},
+                {"type": "text", "text": "🏢 สาขา 1 (ร้านประจำ)", "weight": "bold", "color": "#D1FAE5", "size": "xs"},
                 {"type": "text", "text": "ศูนย์ราชการ อาคาร B", "weight": "bold", "color": "#FFFFFF", "size": "xl", "margin": "xs"}
             ]
         },
         "body": {
             "type": "box",
             "layout": "vertical",
-            "spacing": "md",
+            "spacing": "sm",
             "contents": [
                 {
                     "type": "box",
                     "layout": "vertical",
                     "spacing": "xs",
                     "contents": [
-                        {"type": "text", "text": "📍 พิกัดร้านในอาคาร:", "size": "sm", "color": "#059669", "weight": "bold"},
-                        {"type": "text", "text": "ชั้นล่าง (ตรงข้าม AIS)", "size": "md", "weight": "bold", "color": "#111111"},
+                        {"type": "text", "text": "📍 พิกัดร้านในอาคาร:", "size": "xs", "color": "#059669", "weight": "bold"},
+                        {"type": "text", "text": "ชั้นล่าง (โซน Million Mall ตรงข้าม AIS)", "size": "sm", "weight": "bold", "color": "#111111"},
                         {"type": "text", "text": "ศูนย์ราชการเฉลิมพระเกียรติฯ อาคาร B ถ.แจ้งวัฒนะ", "size": "xs", "color": "#555555", "wrap": True}
                     ]
                 },
-                {"type": "separator"},
+                {"type": "separator", "margin": "xs"},
                 {
                     "type": "box",
                     "layout": "vertical",
                     "spacing": "xs",
                     "contents": [
-                        {"type": "text", "text": "⏰ เวลาทำการ:", "size": "sm", "color": "#059669", "weight": "bold"},
-                        {"type": "text", "text": "จันทร์ - ศุกร์ ตามเวลาราชการ", "size": "sm", "color": "#333333"},
-                        {"type": "text", "text": "(ทางร้านปิดทำการเวลา 15:30 น.)", "size": "sm", "color": "#E11D48", "weight": "bold"}
+                        {"type": "text", "text": "⏰ เวลาทำการ:", "size": "xs", "color": "#059669", "weight": "bold"},
+                        {"type": "text", "text": "จันทร์ - ศุกร์ ตามเวลาราชการ", "size": "xs", "color": "#333333"},
+                        {"type": "text", "text": "(ทางร้านเปิดบริการ 08:30 - 15:00 น.)", "size": "xs", "color": "#E11D48", "weight": "bold"}
                     ]
                 },
-                {"type": "separator"},
+                {"type": "separator", "margin": "xs"},
                 {
                     "type": "box",
                     "layout": "vertical",
                     "spacing": "xs",
                     "contents": [
-                        {"type": "text", "text": "📞 เบอร์ติดต่อ:", "size": "sm", "color": "#059669", "weight": "bold"},
-                        {"type": "text", "text": "• 085-433-6699 (คุณนก)", "size": "sm", "color": "#111111"},
-                        {"type": "text", "text": "• 092-393-7770 (คุณเสถียร)", "size": "sm", "color": "#111111"}
+                        {"type": "text", "text": "✨ สะดวก รวดเร็ว รอรับแว่นได้ใน 20-30 นาที", "size": "xs", "color": "#059669", "weight": "bold"}
                     ]
                 }
             ]
@@ -121,15 +124,17 @@ def get_store_location_flex():
                     "type": "button",
                     "style": "primary",
                     "color": "#059669",
+                    "height": "sm",
                     "action": {
                         "type": "uri",
-                        "label": "🗺️ เปิด Google Maps",
+                        "label": "🗺️ แผนที่ศูนย์ราชการ",
                         "uri": "https://maps.app.goo.gl/RWCdTXF3HJiSskis9"
                     }
                 },
                 {
                     "type": "button",
                     "style": "secondary",
+                    "height": "sm",
                     "action": {
                         "type": "uri",
                         "label": "📞 โทรหาคุณนก",
@@ -139,7 +144,94 @@ def get_store_location_flex():
             ]
         }
     }
-    return FlexMessage(alt_text="แผนที่ร้าน เสถียรการแว่น ศูนย์ราชการ อาคาร B", contents=FlexContainer.from_json(json.dumps(bubble_json)))
+
+    # Bubble 2: สตูดิโอที่บ้าน The Plant-Light ติวานนท์-รังสิต
+    bubble_home = {
+        "type": "bubble",
+        "header": {
+            "type": "box",
+            "layout": "vertical",
+            "backgroundColor": "#4338CA",
+            "contents": [
+                {"type": "text", "text": "🏡 สาขา 2: สตูดิโอส่วนตัว (Home VIP)", "weight": "bold", "color": "#E0E7FF", "size": "xs"},
+                {"type": "text", "text": "The Plant-Light ติวานนท์", "weight": "bold", "color": "#FFFFFF", "size": "lg", "margin": "xs"}
+            ]
+        },
+        "body": {
+            "type": "box",
+            "layout": "vertical",
+            "spacing": "sm",
+            "contents": [
+                {
+                    "type": "box",
+                    "layout": "vertical",
+                    "spacing": "xs",
+                    "contents": [
+                        {"type": "text", "text": "📍 พิกัดสตูดิโอที่บ้าน:", "size": "xs", "color": "#4338CA", "weight": "bold"},
+                        {"type": "text", "text": "บ้านเลขที่ 99/263 (ม.The Plant-Light)", "size": "sm", "weight": "bold", "color": "#111111"},
+                        {"type": "text", "text": "ถ.ติวานนท์-รังสิต อ.เมือง จ.ปทุมธานี", "size": "xs", "color": "#555555", "wrap": True}
+                    ]
+                },
+                {"type": "separator", "margin": "xs"},
+                {
+                    "type": "box",
+                    "layout": "vertical",
+                    "spacing": "xs",
+                    "contents": [
+                        {"type": "text", "text": "👑 จุดเด่นการตรวจที่บ้าน:", "size": "xs", "color": "#4338CA", "weight": "bold"},
+                        {"type": "text", "text": "• ตรวจวัดสายตาละเอียดแบบ Private 1 ต่อ 1", "size": "xs", "color": "#333333"},
+                        {"type": "text", "text": "• เงียบสงบ ไม่ต้องรอคิว ที่จอดรถสะดวกสบาย", "size": "xs", "color": "#333333"},
+                        {"type": "text", "text": "• เปิดบริการทุกวัน (รวม ส.-อา. และช่วงเย็น)", "size": "xs", "color": "#4338CA", "weight": "bold"},
+                        {"type": "text", "text": "• กรุณานัดหมายเวลาล่วงหน้าเพื่อการดูแลที่ดีที่สุด", "size": "xs", "color": "#64748B"}
+                    ]
+                }
+            ]
+        },
+        "footer": {
+            "type": "box",
+            "layout": "vertical",
+            "spacing": "sm",
+            "contents": [
+                {
+                    "type": "button",
+                    "style": "primary",
+                    "color": "#4338CA",
+                    "height": "sm",
+                    "action": {
+                        "type": "uri",
+                        "label": "📅 นัดคิวตรวจที่บ้าน",
+                        "uri": booking_home_url
+                    }
+                },
+                {
+                    "type": "button",
+                    "style": "secondary",
+                    "height": "sm",
+                    "action": {
+                        "type": "uri",
+                        "label": "🗺️ แผนที่บ้านรังสิต",
+                        "uri": "https://maps.google.com/?q=The+Plant+Light+Tiwanon+Rangsit"
+                    }
+                },
+                {
+                    "type": "button",
+                    "style": "link",
+                    "height": "sm",
+                    "action": {
+                        "type": "uri",
+                        "label": "📞 โทรหาคุณเสถียร",
+                        "uri": "tel:0923937770"
+                    }
+                }
+            ]
+        }
+    }
+
+    carousel = {
+        "type": "carousel",
+        "contents": [bubble_gov, bubble_home]
+    }
+    return FlexMessage(alt_text="พิกัดร้าน เสถียรการแว่น (ศูนย์ราชการ อาคาร B & สตูดิโอติวานนท์-รังสิต)", contents=FlexContainer.from_json(json.dumps(carousel)))
 
 
 def get_booth_location_flex():
@@ -768,51 +860,59 @@ def get_contact_flex():
     return FlexMessage(alt_text="เบอร์โทรติดต่อ เสถียรการแว่น", contents=FlexContainer.from_json(json.dumps(bubble_json)))
 
 
-def get_appointment_flex():
+def get_appointment_flex(user_id=""):
+    booking_url = f"{BASE_URL}/form/booking"
+    if user_id:
+        booking_url += f"?userId={user_id}"
+
     bubble_json = {
         "type": "bubble",
         "header": {
             "type": "box",
             "layout": "vertical",
-            "backgroundColor": "#059669",
+            "backgroundColor": "#4338CA",
             "contents": [
-                {"type": "text", "text": "👓 เสถียรการแว่น", "weight": "bold", "color": "#D1FAE5", "size": "md"},
+                {"type": "text", "text": "👓 เสถียรการแว่น", "weight": "bold", "color": "#E0E7FF", "size": "xs"},
                 {"type": "text", "text": "นัดตรวจวัดสายตาละเอียด", "weight": "bold", "color": "#FFFFFF", "size": "xl", "margin": "xs"}
             ]
         },
         "body": {
             "type": "box",
             "layout": "vertical",
-            "spacing": "md",
+            "spacing": "sm",
             "contents": [
                 {
                     "type": "text",
-                    "text": "คุณลูกค้าสามารถ Walk-in เข้ามาตรวจวัดสายตาได้เลย ไม่ต้องจองคิวล่วงหน้าครับ! 😊",
+                    "text": "เลือกสถานที่ตรวจวัดสายตาที่สะดวกได้เลยครับ:",
                     "weight": "bold",
                     "size": "sm",
-                    "color": "#1E293B",
-                    "wrap": True
+                    "color": "#1E293B"
+                },
+                {
+                    "type": "box",
+                    "layout": "vertical",
+                    "backgroundColor": "#EEF2FF",
+                    "cornerRadius": "md",
+                    "paddingAll": "sm",
+                    "borderColor": "#C7D2FE",
+                    "borderWidth": "light",
+                    "contents": [
+                        {"type": "text", "text": "🏡 1. สตูดิโอที่บ้าน (ติวานนท์-รังสิต ปทุมธานี):", "size": "xs", "weight": "bold", "color": "#3730A3"},
+                        {"type": "text", "text": "• ตรวจ Private 1 ต่อ 1 เงียบสงบ ไม่ต้องรอคิว\n• เหมาะกับเลนส์โปรเกรสซีฟ หรือพาครอบครัวมาตรวจ\n• เปิดทุกวัน (รวม ส.-อา. และช่วงเย็น) นัดล่วงหน้า", "size": "xs", "color": "#4B5563", "wrap": True, "margin": "xs"}
+                    ]
                 },
                 {
                     "type": "box",
                     "layout": "vertical",
                     "backgroundColor": "#ECFDF5",
-                    "cornerRadius": "lg",
-                    "paddingAll": "md",
+                    "cornerRadius": "md",
+                    "paddingAll": "sm",
                     "borderColor": "#A7F3D0",
                     "borderWidth": "light",
                     "contents": [
-                        {"type": "text", "text": "📍 พิกัดหน้าร้านหลัก:", "size": "xs", "weight": "bold", "color": "#065F46"},
-                        {"type": "text", "text": "ชั้นล่าง อาคาร B (ตรงข้าม AIS) ศูนย์ราชการเฉลิมพระเกียรติฯ ถ.แจ้งวัฒนะ", "size": "xs", "color": "#333333", "wrap": True, "margin": "xs"},
-                        {"type": "text", "text": "⏰ เวลาทำการ: จันทร์ - ศุกร์ 08:30 - 15:30 น.", "size": "xs", "color": "#059669", "weight": "bold", "margin": "xs"}
+                        {"type": "text", "text": "🏢 2. ศูนย์ราชการ อาคาร B (แจ้งวัฒนะ):", "size": "xs", "weight": "bold", "color": "#065F46"},
+                        {"type": "text", "text": "• ชั้นล่าง โซน Million Mall ตรงข้าม AIS\n• จันทร์ - ศุกร์ 08:30 - 15:00 น. (Walk-in ได้เลย)", "size": "xs", "color": "#4B5563", "wrap": True, "margin": "xs"}
                     ]
-                },
-                {
-                    "type": "text",
-                    "text": "📞 สอบถามหรือแจ้งเวลาก่อนเข้ามาได้ที่:\n• 085-433-6699 (คุณนก)\n• 092-393-7770 (คุณเสถียร)",
-                    "size": "xs",
-                    "color": "#475569",
-                    "wrap": True
                 }
             ]
         },
@@ -824,26 +924,108 @@ def get_appointment_flex():
                 {
                     "type": "button",
                     "style": "primary",
-                    "color": "#059669",
+                    "color": "#4338CA",
+                    "height": "sm",
                     "action": {
                         "type": "uri",
-                        "label": "🗺️ เปิด Google Maps",
-                        "uri": "https://maps.app.goo.gl/RWCdTXF3HJiSskis9"
+                        "label": "📅 จองคิวนัดตรวจสายตา",
+                        "uri": booking_url
                     }
                 },
                 {
                     "type": "button",
                     "style": "secondary",
+                    "height": "sm",
                     "action": {
                         "type": "uri",
-                        "label": "📞 โทรหาคุณนก",
+                        "label": "📞 โทรนัดคุณเสถียร",
+                        "uri": "tel:0923937770"
+                    }
+                },
+                {
+                    "type": "button",
+                    "style": "link",
+                    "height": "sm",
+                    "action": {
+                        "type": "uri",
+                        "label": "📞 โทรนัดคุณนก",
                         "uri": "tel:0854336699"
                     }
                 }
             ]
         }
     }
-    return FlexMessage(alt_text="นัดตรวจวัดสายตา เสถียรการแว่น", contents=FlexContainer.from_json(json.dumps(bubble_json)))
+    return FlexMessage(alt_text="นัดตรวจวัดสายตา เสถียรการแว่น (ที่บ้านรังสิต & ศูนย์ราชการ)", contents=FlexContainer.from_json(json.dumps(bubble_json)))
+
+
+def build_appointment_alert_flex(booking):
+    booking_no = booking.get("booking_no", "-")
+    name = booking.get("customer_name", "-")
+    phone = booking.get("phone", "-")
+    loc = booking.get("preferred_location", "สตูดิโอที่บ้าน")
+    b_date = booking.get("booking_date", "-")
+    b_time = booking.get("booking_time", "-")
+    service = booking.get("service_type", "ตรวจวัดสายตาประกอบแว่น")
+    notes = booking.get("notes", "")
+
+    call_label = f"📞 โทรหา {name}"
+    if len(call_label) > 20:
+        call_label = call_label[:20]
+
+    bubble = {
+        "type": "bubble",
+        "header": {
+            "type": "box",
+            "layout": "vertical",
+            "backgroundColor": "#4338CA",
+            "contents": [
+                {"type": "text", "text": "🔔 มีการนัดหมายตรวจสายตา!", "weight": "bold", "color": "#E0E7FF", "size": "sm"},
+                {"type": "text", "text": f"นัดหมาย #{booking_no}", "weight": "bold", "color": "#FFFFFF", "size": "xl", "margin": "xs"}
+            ]
+        },
+        "body": {
+            "type": "box",
+            "layout": "vertical",
+            "spacing": "sm",
+            "contents": [
+                {
+                    "type": "box",
+                    "layout": "vertical",
+                    "backgroundColor": "#EEF2FF",
+                    "cornerRadius": "md",
+                    "paddingAll": "md",
+                    "contents": [
+                        {"type": "text", "text": f"👤 คุณ: {name}", "weight": "bold", "size": "md", "color": "#312E81"},
+                        {"type": "text", "text": f"📞 โทร: {phone}", "weight": "bold", "size": "sm", "color": "#1E293B", "margin": "xs"},
+                        {"type": "separator", "margin": "sm"},
+                        {"type": "text", "text": f"📍 สถานที่: {loc}", "weight": "bold", "size": "xs", "color": "#4338CA", "margin": "sm", "wrap": True},
+                        {"type": "text", "text": f"📅 วันที่: {b_date} ({b_time})", "size": "xs", "color": "#1E293B", "weight": "bold", "margin": "xs"},
+                        {"type": "text", "text": f"🎯 บริการ: {service}", "size": "xs", "color": "#475569", "margin": "xs", "wrap": True},
+                        {"type": "text", "text": f"📝 หมายเหตุ: {notes}", "size": "xs", "color": "#64748B", "margin": "xs", "wrap": True} if notes else {"type": "text", "text": "📝 หมายเหตุ: -", "size": "xs", "color": "#64748B", "margin": "xs"}
+                    ]
+                }
+            ]
+        },
+        "footer": {
+            "type": "box",
+            "layout": "vertical",
+            "spacing": "sm",
+            "contents": [
+                {
+                    "type": "button",
+                    "style": "primary",
+                    "color": "#4338CA",
+                    "height": "sm",
+                    "action": {
+                        "type": "uri",
+                        "label": call_label,
+                        "uri": f"tel:{phone}"
+                    }
+                }
+            ]
+        }
+    }
+    return FlexMessage(alt_text=f"🔔 [นัดหมายใหม่] {name} ({phone}) - {loc}", contents=FlexContainer.from_json(json.dumps(bubble)))
 
 
 def build_order_alert_flex(order):
@@ -1046,8 +1228,8 @@ def get_reply_for_text(user_msg, user_id=""):
         return get_tracking_flex(user_id=user_id)
 
     # 4. Appointment / Eye Exam Inquiry (ดักคำถามเรื่องการนัดตรวจวัดสายตา)
-    elif any(k in user_msg for k in ["นัด", "จองคิว", "ตรวจวัด", "ตรวจสายตา", "เข้ามาตรวจ", "เปิดกี่โมง", "เปิดวันไหน", "วัดตา", "ตรวจตา"]):
-        return get_appointment_flex()
+    elif any(k in user_msg for k in ["นัด", "จองคิว", "ตรวจวัด", "ตรวจสายตา", "เข้ามาตรวจ", "เปิดกี่โมง", "เปิดวันไหน", "วัดตา", "ตรวจตา", "นัดหมาย", "จองเวลา", "นัดที่บ้าน"]):
+        return get_appointment_flex(user_id=user_id)
 
     # 5. Prescription Slip Inquiry
     elif any(k in user_msg for k in ["สลิป", "ใบวัด", "ขอประวัติ", "ค่าสายตา"]):
@@ -1071,8 +1253,8 @@ def get_reply_for_text(user_msg, user_id=""):
         return get_prescription_flex(user_id=user_id)
 
     # 6. Store Location / Maps
-    elif any(k in user_msg for k in ["แผนที่", "อาคาร b", "ศูนย์ราชการ", "พิกัดร้าน", "ร้านหลัก", "ais", "อยู่ตรงไหน", "เดินทาง", "ที่ตั้ง"]):
-        return get_store_location_flex()
+    elif any(k in user_msg for k in ["แผนที่", "อาคาร b", "ศูนย์ราชการ", "พิกัดร้าน", "ร้านหลัก", "ais", "อยู่ตรงไหน", "เดินทาง", "ที่ตั้ง", "บ้าน", "รังสิต", "ติวานนท์", "ปทุมธานี", "the plant", "สาขา", "พิกัด", "ที่อยู่", "หน้าร้าน"]):
+        return get_store_location_flex(user_id=user_id)
 
     # 7. Booth Schedule
     elif any(k in user_msg for k in ["บูท", "สัญจร", "ตารางบูท", "พิกัดบูท", "ออกบูท", "ไปงานไหน"]):
@@ -1203,13 +1385,15 @@ def get_reply_for_text(user_msg, user_id=""):
         greeting_reply = (
             "สวัสดีครับ! ยินดีต้อนรับสู่ 'ร้านแว่นตา เสถียรการแว่น' ครับ 😊👓\n\n"
             "ทางร้านยินดีให้คำปรึกษาเรื่องสายตา เลนส์ และการเลือกกรอบแว่นทุกชนิดครับ\n\n"
-            "🏢 หน้าร้านหลัก: ศูนย์ราชการเฉลิมพระเกียรติฯ แจ้งวัฒนะ อาคาร B ชั้น 1 (โซน Million Mall ตรงข้าม AIS)\n"
-            "⏰ เปิดทำการ: จันทร์ - ศุกร์ ตามเวลาราชการ (ปิด 15:30 น.)\n\n"
+            "🏢 สาขา 1: ศูนย์ราชการเฉลิมพระเกียรติฯ แจ้งวัฒนะ อาคาร B ชั้น 1 (ตรงข้าม AIS)\n"
+            "⏰ เปิดทำการ: จันทร์ - ศุกร์ ตามเวลาราชการ (08:30 - 15:00 น.)\n\n"
+            "🏡 สาขา 2: สตูดิโอส่วนตัวที่บ้าน (The Plant-Light ติวานนท์-รังสิต ปทุมธานี)\n"
+            "✨ ตรวจวัดสายตาละเอียดแบบ Private VIP (เปิดทุกวัน รวม ส.-อา. นัดล่วงหน้า)\n\n"
             "คุณลูกค้าสามารถแตะเมนูด้านล่าง หรือพิมพ์สอบถามเรื่องสายตาได้เลยครับ:\n"
             "• เช่น 'ทำงานหน้าคอมควรใส่แว่นแบบไหน'\n"
             "• 'ขับรถกลางคืนแสงไฟฟุ้ง'\n"
             "• 'มองใกล้ไม่ชัดต้องยื่นแขน'\n"
-            "• 'วิธีเลือกกรอบแว่นให้เข้ากับหน้า'\n\n"
+            "• 'ขอแผนที่ร้าน' หรือ 'จองคิวนัดตรวจ'\n\n"
             "📞 โทรติดต่อด่วน: 085-433-6699 (คุณนก), 092-393-7770 (คุณเสถียร) ได้ตลอดเวลาครับ!"
         )
         return TextMessage(text=greeting_reply)
@@ -1308,6 +1492,80 @@ def submit_address():
 
     return jsonify({"status": "ok", "order_no": order_no})
 
+@app.route("/form/booking", methods=["GET"])
+def booking_form():
+    return render_template("booking_form.html")
+
+@app.route("/api/submit_booking", methods=["POST"])
+def submit_booking():
+    data = request.json or {}
+    name = data.get("customer_name", "").strip()
+    phone = data.get("phone", "").strip()
+    loc = data.get("preferred_location", "สตูดิโอที่บ้าน (The Plant-Light ติวานนท์-รังสิต ปทุมธานี)").strip()
+    b_date = data.get("booking_date", "").strip()
+    b_time = data.get("booking_time", "").strip()
+    service = data.get("service_type", "ตรวจวัดสายตาประกอบแว่น").strip()
+    notes = data.get("notes", "").strip()
+    user_id = data.get("userId", "").strip()
+
+    if not user_id:
+        user_id = database.get_latest_line_user()
+
+    if not name or not phone or not b_date:
+        return jsonify({"status": "error", "message": "กรุณากรอกข้อมูลให้ครบถ้วน"}), 400
+
+    booking_no = database.create_appointment(
+        line_user_id=user_id,
+        customer_name=name,
+        phone=phone,
+        preferred_location=loc,
+        booking_date=b_date,
+        booking_time=b_time,
+        service_type=service,
+        notes=notes
+    )
+    if user_id:
+        database.link_user_phone(phone, user_id)
+
+    # If LINE user ID exists, send push confirmation to customer
+    if user_id:
+        try:
+            messaging_api = get_messaging_api()
+            confirm_text = (
+                f"✅ ร้านเสถียรการแว่น ได้รับข้อมูลการนัดหมายของคุณเรียบร้อยแล้วครับ!\n\n"
+                f"รหัสนัดหมาย: #{booking_no}\n"
+                f"คุณ: {name}\n"
+                f"สถานที่: {loc}\n"
+                f"วันที่: {b_date} ({b_time})\n"
+                f"บริการ: {service}\n\n"
+                f"คุณเสถียรหรือคุณนกจะโทรยืนยันเวลาเพื่อเตรียมการต้อนรับอย่างดีที่สุดครับ 👓"
+            )
+            messaging_api.push_message(PushMessageRequest(to=user_id, messages=[TextMessage(text=confirm_text)]))
+        except Exception as e:
+            print(f"[WARN] Failed to push booking confirmation to user: {e}")
+
+    # Instant push alert to all registered admins
+    try:
+        booking_data = {
+            "booking_no": booking_no,
+            "customer_name": name,
+            "phone": phone,
+            "preferred_location": loc,
+            "booking_date": b_date,
+            "booking_time": b_time,
+            "service_type": service,
+            "notes": notes
+        }
+        alert_flex = build_appointment_alert_flex(booking_data)
+        notify_all_admins(
+            alert_text=f"🔔 [มีการนัดหมายใหม่!] คุณ {name} ({phone})\nสถานที่: {loc}\nวันที่: {b_date} ({b_time})\nบริการ: {service}",
+            flex_message=alert_flex
+        )
+    except Exception as e:
+        print(f"[WARN] Failed to notify admins of appointment: {e}")
+
+    return jsonify({"status": "ok", "booking_no": booking_no})
+
 @app.route("/admin/login", methods=["GET", "POST"])
 def admin_login():
     error = None
@@ -1336,9 +1594,11 @@ def admin():
     prescriptions = database.get_all_prescriptions()
     promotions = database.get_all_promotions()
     admin_subscribers = database.get_all_admin_subscribers()
+    appointments = database.get_recent_appointments()
 
     completed_orders = sum(1 for o in orders if "เสร็จ" in o.get("status", "") or "จัดส่ง" in o.get("status", "") or "ส่งมอบ" in o.get("status", ""))
     pending_orders = len(orders) - completed_orders
+    pending_appointments = sum(1 for a in appointments if a.get("status") == "รอยืนยันนัดหมาย")
 
     stats = {
         "total_orders": len(orders),
@@ -1347,7 +1607,9 @@ def admin():
         "total_promos": len(promotions),
         "total_rx": len(prescriptions),
         "total_schedules": len(schedules),
-        "total_subscribers": len([s for s in admin_subscribers if s.get("is_active")])
+        "total_subscribers": len([s for s in admin_subscribers if s.get("is_active")]),
+        "total_appointments": len(appointments),
+        "pending_appointments": pending_appointments
     }
 
     return render_template(
@@ -1357,8 +1619,26 @@ def admin():
         prescriptions=prescriptions,
         promotions=promotions,
         admin_subscribers=admin_subscribers,
+        appointments=appointments,
         stats=stats
     )
+
+@app.route("/admin/update_appointment", methods=["POST"])
+@admin_required
+def update_appointment_route():
+    app_id = request.form.get("appointment_id")
+    status = request.form.get("status", "").strip()
+    if app_id and status:
+        database.update_appointment_status(int(app_id), status)
+    return redirect("/admin#appointments")
+
+@app.route("/admin/delete_appointment", methods=["POST"])
+@admin_required
+def delete_appointment_route():
+    app_id = request.form.get("appointment_id")
+    if app_id:
+        database.delete_appointment(int(app_id))
+    return redirect("/admin#appointments")
 
 @app.route("/admin/add_promotion", methods=["POST"])
 @admin_required

@@ -274,12 +274,30 @@ def init_db():
     );
     """)
 
+    # 7. Appointments table (Home Studio & Gov Center booking)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS appointments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        booking_no TEXT UNIQUE,
+        line_user_id TEXT,
+        customer_name TEXT,
+        phone TEXT,
+        preferred_location TEXT DEFAULT 'สตูดิโอที่บ้าน (ติวานนท์-รังสิต)',
+        booking_date TEXT,
+        booking_time TEXT,
+        service_type TEXT DEFAULT 'ตรวจวัดสายตาประกอบแว่น',
+        notes TEXT,
+        status TEXT DEFAULT 'รอยืนยันนัดหมาย',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    """)
+
     # Seed default booth schedule if empty
     cursor.execute("SELECT COUNT(*) FROM booth_schedules")
     if cursor.fetchone()[0] == 0:
         cursor.execute("""
         INSERT INTO booth_schedules (date_range, location, note, is_active)
-        VALUES ('สัปดาห์นี้', 'ศูนย์ราชการเฉลิมพระเกียรติฯ อาคาร B (ร้านประจำ ชั้นล่าง ตรงข้าม AIS)', 'เปิดวันจันทร์ - ศุกร์ 08:30 - 15:30 น.', 1)
+        VALUES ('สัปดาห์นี้', 'ศูนย์ราชการเฉลิมพระเกียรติฯ อาคาร B (ร้านประจำ ชั้นล่าง ตรงข้าม AIS)', 'เปิดวันจันทร์ - ศุกร์ 08:30 - 15:00 น.', 1)
         """)
 
     conn.commit()
@@ -588,6 +606,53 @@ def toggle_admin_subscriber(subscriber_id, is_active):
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("UPDATE admin_subscribers SET is_active = ? WHERE id = ?", (is_active, subscriber_id))
+    conn.commit()
+    conn.close()
+    async_backup_db()
+
+# Appointment functions (Home Studio & Gov Center)
+def create_appointment(line_user_id, customer_name, phone, preferred_location, booking_date, booking_time, service_type="ตรวจวัดสายตาประกอบแว่น", notes=""):
+    conn = get_db()
+    cursor = conn.cursor()
+    booking_no = f"AP-{datetime.now().strftime('%y%m%d')}-{phone[-4:] if len(phone) >= 4 else '0000'}"
+    
+    if not line_user_id and phone:
+        cursor.execute("SELECT user_id FROM line_users WHERE phone LIKE ? LIMIT 1", (f"%{phone[-8:]}%",))
+        row = cursor.fetchone()
+        if row:
+            line_user_id = row["user_id"]
+        else:
+            line_user_id = get_latest_line_user()
+
+    cursor.execute("""
+    INSERT INTO appointments (booking_no, line_user_id, customer_name, phone, preferred_location, booking_date, booking_time, service_type, notes, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'รอยืนยันนัดหมาย')
+    """, (booking_no, line_user_id, customer_name, phone, preferred_location, booking_date, booking_time, service_type, notes))
+    conn.commit()
+    conn.close()
+    async_backup_db()
+    return booking_no
+
+def get_recent_appointments(limit=30):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM appointments ORDER BY id DESC LIMIT ?", (limit,))
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def update_appointment_status(appointment_id, status):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE appointments SET status = ? WHERE id = ?", (status, appointment_id))
+    conn.commit()
+    conn.close()
+    async_backup_db()
+
+def delete_appointment(appointment_id):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM appointments WHERE id = ?", (appointment_id,))
     conn.commit()
     conn.close()
     async_backup_db()

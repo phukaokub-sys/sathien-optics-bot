@@ -157,6 +157,12 @@
                 <span>LINE แจ้งเตือนแอดมิน</span>
                 <span class="bg-slate-200 text-slate-700 text-[11px] px-2 py-0.5 rounded-full font-mono">{{ admin_subscribers|length if admin_subscribers else 0 }}</span>
             </button>
+            <button onclick="switchTab('appointments')" id="btn-tab-appointments" 
+                    class="tab-btn px-4 py-2.5 rounded-2xl text-xs md:text-sm font-bold flex items-center gap-2 whitespace-nowrap border border-slate-200 transition">
+                <span>📅</span>
+                <span>คิวนัดตรวจสายตา</span>
+                <span class="bg-indigo-100 text-indigo-800 text-[11px] px-2 py-0.5 rounded-full font-mono">{{ appointments|length if appointments else 0 }}</span>
+            </button>
         </div>
 
         <!-- ============================================================== -->
@@ -760,6 +766,106 @@
                                             <p class="text-xs text-slate-500 leading-relaxed">
                                                 ให้คุณเสถียรหรือคุณนกเปิดแอป LINE แล้วส่งข้อความ <span class="font-mono bg-slate-100 px-1.5 py-0.5 rounded font-bold text-rose-600">#แอดมิน</span> หรือ <span class="font-mono bg-slate-100 px-1.5 py-0.5 rounded font-bold text-rose-600">#แอดมิน คุณเสถียร</span> เข้ามาในแชทร้าน ระบบจะเชื่อมต่อและบันทึกอัตโนมัติทันที
                                             </p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================================== -->
+        <!-- TAB 6: คิวนัดตรวจสายตา (Appointments) -->
+        <!-- ============================================================== -->
+        <section id="tab-appointments" class="tab-content space-y-4 hidden">
+            <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="bg-gradient-to-r from-indigo-900 to-indigo-950 p-5 text-white flex flex-col md:flex-row md:items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-lg md:text-xl font-bold flex items-center gap-2">
+                            <span>📅</span>
+                            <span>รายการคิวนัดตรวจวัดสายตา</span>
+                        </h2>
+                        <p class="text-xs text-indigo-200 mt-1">คิวนัดหมายสตูดิโอที่บ้าน (ติวานนท์-รังสิต ปทุมธานี) และศูนย์ราชการ อาคาร B</p>
+                    </div>
+                    <a href="/form/booking" target="_blank" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-sm transition flex items-center gap-1.5 self-start md:self-auto">
+                        <span>➕</span>
+                        <span>เปิดฟอร์มนัดหมาย</span>
+                    </a>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs md:text-sm">
+                        <thead>
+                            <tr class="bg-slate-50/75 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[11px] tracking-wider">
+                                <th class="p-4">รหัสนัด</th>
+                                <th class="p-4">วันที่ - เวลา</th>
+                                <th class="p-4">ลูกค้า</th>
+                                <th class="p-4">เบอร์โทร</th>
+                                <th class="p-4">สถานที่</th>
+                                <th class="p-4">บริการ</th>
+                                <th class="p-4">หมายเหตุ</th>
+                                <th class="p-4">สถานะ</th>
+                                <th class="p-4 text-center">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            {% if appointments %}
+                                {% for a in appointments %}
+                                <tr class="hover:bg-slate-50/50 transition">
+                                    <td class="p-4 font-mono font-bold text-indigo-700">{{ a.booking_no }}</td>
+                                    <td class="p-4">
+                                        <div class="font-bold text-slate-800">{{ a.booking_date }}</div>
+                                        <div class="text-[11px] text-slate-500">{{ a.booking_time }}</div>
+                                    </td>
+                                    <td class="p-4 font-bold text-slate-900">{{ a.customer_name }}</td>
+                                    <td class="p-4">
+                                        <a href="tel:{{ a.phone }}" class="text-blue-600 font-semibold hover:underline">
+                                            {{ a.phone }}
+                                        </a>
+                                    </td>
+                                    <td class="p-4">
+                                        {% if "บ้าน" in a.preferred_location or "Plant" in a.preferred_location %}
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                            🏡 ที่บ้าน (รังสิต)
+                                        </span>
+                                        {% else %}
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                            🏢 ศูนย์ราชการ
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="p-4 text-slate-700 text-xs">{{ a.service_type }}</td>
+                                    <td class="p-4 text-slate-500 text-xs max-w-xs truncate">{{ a.notes or '-' }}</td>
+                                    <td class="p-4">
+                                        <form method="POST" action="/admin/update_appointment" class="inline">
+                                            <input type="hidden" name="appointment_id" value="{{ a.id }}">
+                                            <select name="status" onchange="this.form.submit()" class="text-xs font-semibold rounded-lg px-2 py-1 border border-slate-200 bg-white focus:outline-none">
+                                                <option value="รอยืนยันนัดหมาย" {% if a.status == 'รอยืนยันนัดหมาย' %}selected{% endif %}>⏳ รอยืนยัน</option>
+                                                <option value="ยืนยันนัดหมายแล้ว" {% if a.status == 'ยืนยันนัดหมายแล้ว' %}selected{% endif %}>✅ ยืนยันแล้ว</option>
+                                                <option value="ตรวจเสร็จสิ้น" {% if a.status == 'ตรวจเสร็จสิ้น' %}selected{% endif %}>👓 ตรวจแล้ว</option>
+                                                <option value="ยกเลิกนัด" {% if a.status == 'ยกเลิกนัด' %}selected{% endif %}>❌ ยกเลิก</option>
+                                            </select>
+                                        </form>
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <form method="POST" action="/admin/delete_appointment" onsubmit="return confirm('ต้องการลบนัดหมายนี้ใช่หรือไม่?');" class="inline">
+                                            <input type="hidden" name="appointment_id" value="{{ a.id }}">
+                                            <button type="submit" class="px-2.5 py-1 text-rose-600 hover:bg-rose-50 rounded-lg text-xs font-medium transition cursor-pointer">
+                                                ลบ
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="9" class="py-12 text-center text-slate-400">
+                                        <div class="max-w-xs mx-auto space-y-2">
+                                            <span class="text-3xl block">📅</span>
+                                            <p class="font-medium text-slate-600 text-sm">ยังไม่มีรายการนัดหมายเข้ามา</p>
+                                            <p class="text-xs text-slate-400">เมื่อลูกค้านัดคิวผ่าน LINE หรือเว็บ ฟอร์มจะแสดงขึ้นที่นี่</p>
                                         </div>
                                     </td>
                                 </tr>

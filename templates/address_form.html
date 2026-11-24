@@ -10,13 +10,22 @@
         body { font-family: 'Prompt', sans-serif; }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen py-6 px-4">
-    <div class="max-w-md mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-100">
-        <!-- Header -->
-        <div class="bg-gradient-to-r from-blue-900 to-indigo-950 p-6 text-white text-center">
-            <span class="text-3xl">👓</span>
-            <h1 class="text-xl font-bold mt-2">เสถียรการแว่น</h1>
-            <p class="text-xs text-blue-200 mt-1">ฟอร์มแจ้งที่อยู่จัดส่งแว่นตา (ตัดที่บูท/หน้าร้าน)</p>
+<body class="bg-gradient-to-br from-slate-100 via-blue-50/30 to-slate-100 min-h-screen py-8 px-4 flex items-center justify-center">
+    <div class="max-w-md w-full mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200/80">
+        <!-- Header with Subtle Eyewear Background -->
+        <div class="relative overflow-hidden p-7 text-white text-center">
+            <!-- Subtle optical background layer (Manee Frames) -->
+            <div class="absolute inset-0 bg-cover bg-center opacity-20 pointer-events-none filter blur-[0.3px]" 
+                 style="background-image: url('/static/images/bg_manee_frames.jpg');"></div>
+            <!-- Gradient overlay mask for crisp readability -->
+            <div class="absolute inset-0 bg-gradient-to-b from-blue-950/95 via-indigo-900/90 to-slate-950/95 pointer-events-none"></div>
+
+            <div class="relative z-10 flex flex-col items-center">
+                <span class="text-3xl filter drop-shadow">👓</span>
+                <h1 class="text-xl font-bold mt-2 tracking-wide text-white drop-shadow">เสถียรการแว่น</h1>
+                <p class="text-xs text-blue-200 mt-1 font-light">ฟอร์มแจ้งที่อยู่จัดส่งแว่นตา (ตัดที่บูท/หน้าร้าน)</p>
+                <div class="h-1 w-20 bg-gradient-to-r from-amber-400 via-yellow-200 to-amber-500 rounded-full mx-auto mt-3"></div>
+            </div>
         </div>
 
         <!-- Form -->
@@ -49,7 +58,7 @@
 
             <div class="pt-2">
                 <button type="submit" id="btnSubmit" 
-                        class="w-full bg-blue-700 hover:bg-blue-800 text-white font-medium py-3 rounded-xl shadow-lg shadow-blue-200 transition duration-200 flex justify-center items-center gap-2">
+                        class="w-full bg-gradient-to-r from-blue-700 via-indigo-700 to-indigo-900 hover:from-blue-800 hover:to-indigo-950 text-white font-bold py-3.5 rounded-2xl shadow-lg shadow-blue-700/25 transition-all duration-200 transform active:scale-98 flex justify-center items-center gap-2 cursor-pointer">
                     <span>บันทึกที่อยู่จัดส่ง</span>
                     <span>➔</span>
                 </button>
@@ -57,13 +66,20 @@
         </form>
 
         <!-- Success Modal/Card (Hidden by default) -->
-        <div id="successCard" class="hidden p-8 text-center space-y-4">
-            <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-3xl">
+        <div id="successCard" class="hidden relative overflow-hidden p-8 text-center space-y-4">
+            <!-- Subtle optical background layer -->
+            <div class="absolute inset-0 bg-cover bg-center opacity-10 pointer-events-none" 
+                 style="background-image: url('/static/images/bg_manee_frames.jpg');"></div>
+            <div class="absolute inset-0 bg-gradient-to-b from-white/95 via-white/90 to-emerald-50/80 pointer-events-none"></div>
+
+            <div class="relative z-10 w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-3xl shadow-sm ring-4 ring-emerald-50">
                 ✓
             </div>
-            <h2 class="text-xl font-bold text-slate-800">บันทึกข้อมูลเรียบร้อยแล้ว</h2>
-            <p class="text-sm text-slate-600">ทางร้านเสถียรการแว่นได้รับที่อยู่จัดส่งของคุณแล้วครับ เมื่อแว่นประกอบเสร็จและจัดส่งแล้ว จะแจ้งเลขพัสดุให้ทราบผ่าน LINE ทันทีครับ 👓</p>
-            <p class="text-xs text-slate-400">คุณสามารถปิดหน้านี้ได้เลยครับ</p>
+            <h2 class="relative z-10 text-xl font-bold text-slate-800">บันทึกข้อมูลเรียบร้อยแล้ว</h2>
+            <p class="relative z-10 text-sm text-slate-600 leading-relaxed">
+                ทางร้านเสถียรการแว่นได้รับที่อยู่จัดส่งของคุณแล้วครับ เมื่อแว่นประกอบเสร็จและจัดส่งแล้ว จะแจ้งเลขพัสดุให้ทราบผ่าน LINE ทันทีครับ 👓
+            </p>
+            <p class="relative z-10 text-xs text-slate-400">คุณสามารถปิดหน้านี้ได้เลยครับ</p>
         </div>
 
         <div class="p-4 bg-slate-50 border-t border-slate-100 text-center">

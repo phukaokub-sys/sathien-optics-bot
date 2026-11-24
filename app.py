@@ -69,6 +69,13 @@ def get_store_location_flex(user_id=""):
     # Bubble 1: ศูนย์ราชการ อาคาร B
     bubble_gov = {
         "type": "bubble",
+        "hero": {
+            "type": "image",
+            "url": f"{BASE_URL}/static/images/bg_hoya_blue.jpg",
+            "size": "full",
+            "aspectRatio": "20:13",
+            "aspectMode": "cover"
+        },
         "header": {
             "type": "box",
             "layout": "vertical",
@@ -148,6 +155,13 @@ def get_store_location_flex(user_id=""):
     # Bubble 2: สตูดิโอที่บ้าน The Plant-Light ติวานนท์-รังสิต
     bubble_home = {
         "type": "bubble",
+        "hero": {
+            "type": "image",
+            "url": f"{BASE_URL}/static/images/bg_clinic_exam.jpg",
+            "size": "full",
+            "aspectRatio": "20:13",
+            "aspectMode": "cover"
+        },
         "header": {
             "type": "box",
             "layout": "vertical",
@@ -311,6 +325,13 @@ def get_tracking_flex(order=None, user_id=""):
         status_color = "#10B981" if "เสร็จ" in order['status'] or "จัดส่ง" in order['status'] else "#F59E0B"
         bubble_json = {
             "type": "bubble",
+            "hero": {
+                "type": "image",
+                "url": f"{BASE_URL}/static/images/bg_manee_frames.jpg",
+                "size": "full",
+                "aspectRatio": "20:13",
+                "aspectMode": "cover"
+            },
             "header": {
                 "type": "box",
                 "layout": "vertical",
@@ -380,6 +401,13 @@ def get_tracking_flex(order=None, user_id=""):
 
     bubble_json = {
         "type": "bubble",
+        "hero": {
+            "type": "image",
+            "url": f"{BASE_URL}/static/images/bg_manee_frames.jpg",
+            "size": "full",
+            "aspectRatio": "20:13",
+            "aspectMode": "cover"
+        },
         "header": {
             "type": "box",
             "layout": "vertical",
@@ -740,6 +768,13 @@ def get_prescription_flex(user_id=None, phone=None):
 def get_service_care_flex():
     bubble_json = {
         "type": "bubble",
+        "hero": {
+            "type": "image",
+            "url": f"{BASE_URL}/static/images/bg_diwty_titanium.jpg",
+            "size": "full",
+            "aspectRatio": "20:13",
+            "aspectMode": "cover"
+        },
         "header": {
             "type": "box",
             "layout": "vertical",
@@ -810,6 +845,13 @@ def get_service_care_flex():
 def get_contact_flex():
     bubble_json = {
         "type": "bubble",
+        "hero": {
+            "type": "image",
+            "url": f"{BASE_URL}/static/images/bg_diwty_titanium.jpg",
+            "size": "full",
+            "aspectRatio": "20:13",
+            "aspectMode": "cover"
+        },
         "header": {
             "type": "box",
             "layout": "vertical",
@@ -867,6 +909,13 @@ def get_appointment_flex(user_id=""):
 
     bubble_json = {
         "type": "bubble",
+        "hero": {
+            "type": "image",
+            "url": f"{BASE_URL}/static/images/bg_clinic_exam.jpg",
+            "size": "full",
+            "aspectRatio": "20:13",
+            "aspectMode": "cover"
+        },
         "header": {
             "type": "box",
             "layout": "vertical",

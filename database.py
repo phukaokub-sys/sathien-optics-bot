@@ -568,14 +568,14 @@ def add_prescription(line_user_id, phone, customer_name, patient_name, relation,
     if not relation:
         relation = "เจ้าของบัญชี"
 
-    # If line_user_id is not provided, try to find from phone or latest active line user
+    # If line_user_id is not provided, try to find from phone only
     if not line_user_id and phone:
         cursor.execute("SELECT user_id FROM line_users WHERE phone LIKE ? LIMIT 1", (f"%{phone[-8:]}%",))
         row = cursor.fetchone()
         if row:
             line_user_id = row["user_id"]
         else:
-            line_user_id = get_latest_line_user()
+            line_user_id = ""
 
     cursor.execute("""
     INSERT INTO prescriptions (

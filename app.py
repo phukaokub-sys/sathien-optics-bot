@@ -2,7 +2,7 @@ import os
 import json
 import re
 from functools import wraps
-from datetime import timedelta
+from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from flask import Flask, request, abort, render_template, redirect, url_for, jsonify, send_file, session
 
@@ -700,6 +700,31 @@ def get_promotion_flex():
     return FlexMessage(alt_text="แพ็กเกจแว่นตายอดนิยม เสถียรการแว่น", contents=FlexContainer.from_json(json.dumps(carousel_json)))
 
 def get_prescription_flex(user_id=None, phone=None):
+    if user_id or phone:
+        try:
+            saved_rxs = database.get_prescriptions_by_user(user_id=user_id, phone=phone)
+            if saved_rxs:
+                bubbles = []
+                for rx in saved_rxs[:5]:
+                    b = build_prescription_bubble(rx, base_url=BASE_URL)
+                    bubbles.append(b)
+                if len(bubbles) == 1:
+                    return FlexMessage(
+                        alt_text=f"👓 สลิปผลตรวจวัดสายตา: {saved_rxs[0].get('patient_name', 'คุณลูกค้า')}",
+                        contents=FlexContainer.from_json(json.dumps(bubbles[0]))
+                    )
+                else:
+                    carousel = {
+                        "type": "carousel",
+                        "contents": bubbles
+                    }
+                    return FlexMessage(
+                        alt_text=f"👓 สลิปผลตรวจวัดสายตา ({len(bubbles)} รายการ)",
+                        contents=FlexContainer.from_json(json.dumps(carousel))
+                    )
+        except Exception as err:
+            print(f"[WARN] Failed to fetch user prescriptions for flex: {err}")
+
     bubble_json = {
         "type": "bubble",
         "header": {
@@ -1208,7 +1233,12 @@ def notify_all_admins(alert_text, flex_message=None):
             if not uid or uid.startswith("Utest_"):
                 continue
             try:
-                msgs = [flex_message] if flex_message else [TextMessage(text=alert_text)]
+                if alert_text and flex_message:
+                    msgs = [TextMessage(text=alert_text), flex_message]
+                elif flex_message:
+                    msgs = [flex_message]
+                else:
+                    msgs = [TextMessage(text=alert_text)]
                 messaging_api.push_message(
                     PushMessageRequest(
                         to=uid,
@@ -1792,19 +1822,49 @@ def add_prescription_route():
         pd=pd, image_url=image_url, notes=notes, exam_date=exam_date
     )
 
-    # Auto-push interactive prescription flex card to customer on LINE!
-    if resolved_uid:
+    # Build full interactive prescription card
+    rx_data = {
+        "id": rx_id,
+        "patient_name": patient_name,
+        "customer_name": customer_name,
+        "relation": relation,
+        "exam_date": exam_date or datetime.now().strftime("%d/%m/%Y"),
+        "sph_r": sph_r, "cyl_r": cyl_r, "axis_r": axis_r, "add_r": add_r,
+        "sph_l": sph_l, "cyl_l": cyl_l, "axis_l": axis_l, "add_l": add_l,
+        "pd": pd,
+        "notes": notes,
+        "image_url": image_url
+    }
+    
+    rx_bubble = build_prescription_bubble(rx_data, base_url=BASE_URL)
+    rx_flex = FlexMessage(
+        alt_text=f"👓 ผลตรวจวัดสายตา: {patient_name} ({phone})",
+        contents=FlexContainer.from_json(json.dumps(rx_bubble))
+    )
+
+    # 1. ALWAYS push to ALL active admins (คุณภูเขา, คุณนก, คุณเสถียร) 100%
+    try:
+        admin_alert_text = f"📋 [บันทึกสลิปสายตาใหม่] {patient_name} ({relation})\n📞 เบอร์โทร: {phone}"
+        admin_count = notify_all_admins(
+            alert_text=admin_alert_text,
+            flex_message=rx_flex
+        )
+        print(f"[SUCCESS] Pushed prescription alert to {admin_count} admins for {patient_name}")
+    except Exception as e:
+        print(f"[WARN] Failed to push prescription alert to admins: {e}")
+
+    # 2. Push to customer ONLY IF they have a known, verified LINE account (never random latest user)
+    if resolved_uid and not resolved_uid.startswith("Utest_"):
         try:
             messaging_api = get_messaging_api()
-            flex_msg = get_prescription_flex(user_id=resolved_uid, phone=phone)
             greeting = f"🎉 เสถียรการแว่น ขอส่งผลตรวจวัดสายตาของ '{patient_name}' ({relation}) เรียบร้อยแล้วครับ สามารถเปิดดูข้อมูลสลิปด้านล่างนี้ได้ตลอดเวลาครับ 👓"
             messaging_api.push_message(PushMessageRequest(
                 to=resolved_uid,
-                messages=[TextMessage(text=greeting), flex_msg]
+                messages=[TextMessage(text=greeting), rx_flex]
             ))
-            print(f"[SUCCESS] Pushed prescription flex to LINE user: {resolved_uid}")
+            print(f"[SUCCESS] Pushed prescription flex to customer LINE: {resolved_uid}")
         except Exception as e:
-            print(f"[WARN] Failed to push prescription to LINE: {e}")
+            print(f"[WARN] Failed to push prescription to customer: {e}")
 
     return redirect("/admin")
 

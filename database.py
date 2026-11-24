@@ -131,6 +131,111 @@ def async_backup_db():
     threading.Thread(target=backup_db_to_cloud, daemon=True).start()
 
 
+def upload_file_to_cloud(local_filepath, remote_path):
+    """
+    Uploads any media file (image/slip/promo) to the persistent GitHub cloud branch 'db-storage'.
+    Returns the permanent public raw URL or None.
+    """
+    token = os.getenv("GITHUB_TOKEN", GITHUB_TOKEN).strip()
+    repo = os.getenv("GITHUB_REPO", GITHUB_REPO).strip()
+    branch = os.getenv("GITHUB_DB_BRANCH", GITHUB_DB_BRANCH).strip()
+
+    if not token or not repo or not os.path.exists(local_filepath):
+        return None
+
+    try:
+        with open(local_filepath, "rb") as f:
+            content_b64 = base64.b64encode(f.read()).decode("utf-8")
+
+        # 1. Check if remote file exists to obtain sha
+        sha = None
+        get_url = f"https://api.github.com/repos/{repo}/contents/{remote_path}?ref={branch}"
+        get_req = urllib.request.Request(
+            get_url,
+            headers={
+                "Authorization": f"token {token}",
+                "Accept": "application/vnd.github.v3+json",
+                "User-Agent": "Sathien-Optics-Bot"
+            }
+        )
+        try:
+            with urllib.request.urlopen(get_req, timeout=8) as r:
+                meta = json.loads(r.read().decode("utf-8"))
+                sha = meta.get("sha")
+        except urllib.error.HTTPError as he:
+            if he.code != 404:
+                print(f"[WARN] Error fetching remote SHA for {remote_path}: {he.code}")
+
+        # 2. Put file to GitHub
+        payload = {
+            "message": f"Upload cloud media {remote_path} [skip ci]",
+            "content": content_b64,
+            "branch": branch
+        }
+        if sha:
+            payload["sha"] = sha
+
+        put_url = f"https://api.github.com/repos/{repo}/contents/{remote_path}"
+        put_req = urllib.request.Request(
+            put_url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={
+                "Authorization": f"token {token}",
+                "Accept": "application/vnd.github.v3+json",
+                "Content-Type": "application/json",
+                "User-Agent": "Sathien-Optics-Bot"
+            },
+            method="PUT"
+        )
+        with urllib.request.urlopen(put_req, timeout=15) as r:
+            res = json.loads(r.read().decode("utf-8"))
+            download_url = res.get("content", {}).get("download_url") or f"https://raw.githubusercontent.com/{repo}/{branch}/{remote_path}"
+            print(f"[SUCCESS] Uploaded {remote_path} to cloud branch '{branch}' -> {download_url}")
+            return download_url
+    except Exception as e:
+        print(f"[WARN] Failed to upload {remote_path} to cloud: {e}")
+        return None
+
+
+def async_upload_file_to_cloud(local_filepath, remote_path):
+    """
+    Triggers asynchronous media upload in background thread.
+    """
+    threading.Thread(target=upload_file_to_cloud, args=(local_filepath, remote_path), daemon=True).start()
+
+
+def restore_file_from_cloud(remote_path, local_filepath):
+    """
+    Fetches a missing file from GitHub 'db-storage' branch and saves locally.
+    """
+    token = os.getenv("GITHUB_TOKEN", GITHUB_TOKEN).strip()
+    repo = os.getenv("GITHUB_REPO", GITHUB_REPO).strip()
+    branch = os.getenv("GITHUB_DB_BRANCH", GITHUB_DB_BRANCH).strip()
+
+    if not repo:
+        return False
+
+    try:
+        raw_url = f"https://raw.githubusercontent.com/{repo}/{branch}/{remote_path}"
+        req = urllib.request.Request(
+            raw_url,
+            headers={
+                "Authorization": f"token {token}" if token else "",
+                "User-Agent": "Sathien-Optics-Bot"
+            }
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = resp.read()
+            os.makedirs(os.path.dirname(local_filepath), exist_ok=True)
+            with open(local_filepath, "wb") as f:
+                f.write(data)
+            print(f"[SUCCESS] Restored {len(data)} bytes of {remote_path} from cloud storage!")
+            return True
+    except Exception as e:
+        print(f"[INFO] Could not restore {remote_path} from cloud: {e}")
+        return False
+
+
 def get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row

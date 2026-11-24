@@ -1734,6 +1734,10 @@ def add_promotion_route():
             promo_file.save(filepath)
             image_url = f"/static/promotions/{safe_name}"
 
+            # Automated Cloud Backup to GitHub db-storage
+            cloud_path = f"uploads/promotions/{safe_name}"
+            database.async_upload_file_to_cloud(filepath, cloud_path)
+
     if title and price:
         database.add_promotion(title, price, tag, color, details, sort_order, image_url)
     return redirect("/admin#promotions")
@@ -1777,6 +1781,10 @@ def add_prescription_route():
         filepath = os.path.join(UPLOAD_FOLDER, safe_name)
         slip_file.save(filepath)
         image_url = f"{BASE_URL}/static/prescriptions/{safe_name}"
+
+        # Automated Cloud Backup to GitHub db-storage
+        cloud_path = f"uploads/prescriptions/{safe_name}"
+        database.async_upload_file_to_cloud(filepath, cloud_path)
 
     # Save to database
     rx_id, resolved_uid = database.add_prescription(
@@ -1917,6 +1925,32 @@ def booth_card():
 @app.route("/logo-image", methods=["GET"])
 def logo_image():
     return send_file(os.path.join(os.path.dirname(__file__), "logo_original.jpg"), mimetype="image/jpeg")
+
+@app.route("/static/promotions/<path:filename>", methods=["GET"])
+def serve_promotions_file(filename):
+    filepath = os.path.join(PROMOTIONS_FOLDER, filename)
+    if not os.path.exists(filepath):
+        # Auto-restore missing promo image from GitHub db-storage cloud
+        cloud_path = f"uploads/promotions/{filename}"
+        database.restore_file_from_cloud(cloud_path, filepath)
+    if os.path.exists(filepath):
+        return send_file(filepath)
+    # Graceful fallback to default optical promo image
+    fallback_path = os.path.join(os.path.dirname(__file__), "static", "images", "bg_model_noya.jpg")
+    if os.path.exists(fallback_path):
+        return send_file(fallback_path)
+    abort(404)
+
+@app.route("/static/prescriptions/<path:filename>", methods=["GET"])
+def serve_prescriptions_file(filename):
+    filepath = os.path.join(UPLOAD_FOLDER, filename)
+    if not os.path.exists(filepath):
+        # Auto-restore missing prescription slip from GitHub db-storage cloud
+        cloud_path = f"uploads/prescriptions/{filename}"
+        database.restore_file_from_cloud(cloud_path, filepath)
+    if os.path.exists(filepath):
+        return send_file(filepath)
+    abort(404)
 
 # ==========================================
 # WEBHOOK CALLBACK

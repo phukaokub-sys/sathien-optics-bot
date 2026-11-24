@@ -75,6 +75,15 @@
 * แก้ปัญหา Database Reset เมื่อ Render ทำการดีพลอยหรือรีสตาร์ท
 * ทำงานด้วยระบบ Auto-Restore on Boot (ดึงข้อมูลล่าสุดจาก GitHub branch `db-storage`) และ Auto-Backup in Background ทุกครั้งที่มีการบันทึกข้อมูลใหม่
 
+### 6) Optical UI & Eyewear Background Layer Integration (ปรับโฉม UI สวยหรูระดับพรีเมียม)
+* นำภาพบรรยากาศร้านจริงและสินค้าจริงของเสถียรการแว่นมาผสานเป็นพื้นหลังแบบกึ่งโปร่งใส (Semi-transparent background layers 10% - 25% opacity):
+  * `bg_clinic_exam.jpg`: ภาพคุณเสถียรตรวจวัดสายตาลูกค้าด้วยเครื่องคอมพิวเตอร์และ Phoropter (ใช้เป็น Header ฟอร์มนัดหมาย, การ์ดสตูดิโอที่บ้าน, แท็บสลิปสายตา, และหน้าจอเข้าสู่ระบบ)
+  * `bg_hoya_blue.jpg`: ภาพป้ายต้อนรับเลนส์ HOYA BlueControl (ใช้กับการ์ดศูนย์ราชการ อาคาร B, แท็บบูทสัญจร, และป้ายตั้งโต๊ะ)
+  * `bg_manee_frames.jpg`: ภาพกรอบแว่นตา Manee Eyewear บนโต๊ะไม้ธรรมชาติ (ใช้กับการ์ดออเดอร์ตัดแว่น, ฟอร์มที่อยู่จัดส่ง, และระบบติดตามพัสดุ)
+  * `bg_model_noya.jpg`: ภาพนางแบบแฟชั่นและคอลเลกชันกรอบแว่น NOYA (ใช้กับการ์ดแพ็กเกจโปรโมชั่น)
+  * `bg_diwty_titanium.jpg`: ภาพกรอบแว่นไทเทเนียมพรีเมียม Diwty บนแท่นไม้ (ใช้กับหน้า Admin Login, การ์ดบริการหลังการขาย, และระบบสมาชิกแอดมิน)
+* รองรับ Responsive และ Micro-interaction ด้วยเอฟเฟกต์ซูมละมุนเมื่อ Hover (`group-hover:scale-108 transition-all duration-500`) พร้อม Gradient mask ป้องกันแสงสะท้อน ทำให้อักษร ตัวเลข และปุ่มกดอ่านง่าย คมชัด 100% บนทุกขนาดหน้าจอ
+
 ---
 
 ## 4. กฎเหล็กในการพัฒนาต่อยอด (Guidelines for Future Developers / AI)

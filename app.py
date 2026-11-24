@@ -210,7 +210,7 @@ def get_store_location_flex(user_id=""):
                     "action": {
                         "type": "uri",
                         "label": "🗺️ แผนที่บ้านรังสิต",
-                        "uri": "https://maps.google.com/?q=The+Plant+Light+Tiwanon+Rangsit"
+                        "uri": "https://maps.app.goo.gl/4PYEPsbsrqpmZeXy6?g_st=al"
                     }
                 },
                 {

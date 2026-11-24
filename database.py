@@ -228,11 +228,18 @@ def init_db():
         tag TEXT,
         color TEXT DEFAULT '#EA580C',
         details TEXT,
+        image_url TEXT,
         is_active INTEGER DEFAULT 1,
         sort_order INTEGER DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
     """)
+
+    # Migration for promotions image_url column
+    try:
+        cursor.execute("ALTER TABLE promotions ADD COLUMN image_url TEXT")
+    except Exception:
+        pass
 
     # Seed default promotions if empty
     cursor.execute("SELECT COUNT(*) FROM promotions")
@@ -552,27 +559,27 @@ def get_all_promotions():
     conn.close()
     return [dict(r) for r in rows]
 
-def add_promotion(title, price, tag, color="#EA580C", details="", sort_order=0):
+def add_promotion(title, price, tag, color="#EA580C", details="", sort_order=0, image_url=""):
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("""
-    INSERT INTO promotions (title, price, tag, color, details, sort_order, is_active)
-    VALUES (?, ?, ?, ?, ?, ?, 1)
-    """, (title, price, tag, color, details, sort_order))
+    INSERT INTO promotions (title, price, tag, color, details, sort_order, image_url, is_active)
+    VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+    """, (title, price, tag, color, details, sort_order, image_url))
     promo_id = cursor.lastrowid
     conn.commit()
     conn.close()
     async_backup_db()
     return promo_id
 
-def update_promotion(promo_id, title, price, tag, color="#EA580C", details="", is_active=1):
+def update_promotion(promo_id, title, price, tag, color="#EA580C", details="", sort_order=0, image_url="", is_active=1):
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("""
     UPDATE promotions 
-    SET title = ?, price = ?, tag = ?, color = ?, details = ?, is_active = ?
+    SET title = ?, price = ?, tag = ?, color = ?, details = ?, sort_order = ?, image_url = ?, is_active = ?
     WHERE id = ?
-    """, (title, price, tag, color, details, is_active, promo_id))
+    """, (title, price, tag, color, details, sort_order, image_url, is_active, promo_id))
     conn.commit()
     conn.close()
     async_backup_db()

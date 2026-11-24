@@ -680,6 +680,17 @@ def get_promotion_flex():
                 ]
             }
         }
+
+        img_url = p.get("image_url")
+        if img_url:
+            full_img_url = f"{BASE_URL}{img_url}" if img_url.startswith("/") else img_url
+            bubble["hero"] = {
+                "type": "image",
+                "url": full_img_url,
+                "size": "full",
+                "aspectRatio": "20:13",
+                "aspectMode": "cover"
+            }
         bubbles.append(bubble)
 
     carousel_json = {
@@ -1473,6 +1484,8 @@ def get_reply_for_text(user_msg, user_id=""):
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), "static", "prescriptions")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+PROMOTIONS_FOLDER = os.path.join(os.path.dirname(__file__), "static", "promotions")
+os.makedirs(PROMOTIONS_FOLDER, exist_ok=True)
 
 @app.route("/", methods=["GET"])
 def home():
@@ -1694,19 +1707,36 @@ def delete_appointment_route():
 @app.route("/admin/add_promotion", methods=["POST"])
 @admin_required
 def add_promotion_route():
+    import time
+    from werkzeug.utils import secure_filename
+
     title = request.form.get("title", "").strip()
     price = request.form.get("price", "").strip()
     tag = request.form.get("tag", "").strip()
     color = request.form.get("color", "#EA580C").strip()
     details = request.form.get("details", "").strip()
     sort_order_raw = request.form.get("sort_order", "0").strip()
+    image_url = request.form.get("image_url", "").strip()
+
     try:
         sort_order = int(sort_order_raw)
     except ValueError:
         sort_order = 0
+
+    # Handle promo image file upload
+    promo_file = request.files.get("promo_image")
+    if promo_file and promo_file.filename:
+        ext = os.path.splitext(promo_file.filename)[1].lower()
+        if ext in [".jpg", ".jpeg", ".png", ".webp"]:
+            safe_base = secure_filename(os.path.splitext(promo_file.filename)[0]) or "promo"
+            safe_name = f"promo_{int(time.time())}_{safe_base[:20]}{ext}"
+            filepath = os.path.join(PROMOTIONS_FOLDER, safe_name)
+            promo_file.save(filepath)
+            image_url = f"/static/promotions/{safe_name}"
+
     if title and price:
-        database.add_promotion(title, price, tag, color, details, sort_order)
-    return redirect("/admin")
+        database.add_promotion(title, price, tag, color, details, sort_order, image_url)
+    return redirect("/admin#promotions")
 
 @app.route("/admin/delete_promotion", methods=["POST"])
 @admin_required

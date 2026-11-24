@@ -356,60 +356,187 @@
                     </span>
                 </div>
 
-                <!-- Form เพิ่มโปรโมชั่นใหม่ -->
-                <form action="/admin/add_promotion" method="POST" class="p-5 bg-orange-50/30 border-b border-orange-100 space-y-4">
-                    <h3 class="text-xs font-bold text-orange-900 uppercase tracking-wide flex items-center gap-1.5">
-                        <span>➕</span> เพิ่มแพ็กเกจโปรโมชั่นใหม่
-                    </h3>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1">ชื่อแพ็กเกจ*</label>
-                            <input type="text" name="title" required placeholder="เช่น ชุดตัดแว่นเริ่มต้น" 
-                                   class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1">ราคา (บาท)*</label>
-                            <input type="text" name="price" required placeholder="เช่น 990 หรือ 1,490" 
-                                   class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1">ป้ายกำกับ (Tag)</label>
-                            <input type="text" name="tag" placeholder="เช่น 🔥 โปรสุดคุ้ม ยอดนิยม" 
-                                   class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1">ธีมสีการ์ด & ลำดับ</label>
-                            <div class="flex gap-2">
-                                <select name="color" class="flex-1 px-3 py-2.5 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white font-medium">
-                                    <option value="#EA580C" selected>🟠 ส้มสดใส (#EA580C)</option>
-                                    <option value="#059669">🟢 เขียวเสถียร (#059669)</option>
-                                    <option value="#2563EB">🔵 น้ำเงินสมาร์ท (#2563EB)</option>
-                                    <option value="#7C3AED">🟣 ม่วงพรีเมียม (#7C3AED)</option>
-                                    <option value="#DB2777">🌸 ชมพูสดใส (#DB2777)</option>
-                                    <option value="#15803D">🌲 เขียวหรูหรา (#15803D)</option>
-                                </select>
-                                <input type="number" name="sort_order" value="1" min="1" max="99" title="ลำดับแสดงผล"
-                                       class="w-16 px-2 py-2.5 rounded-xl border border-slate-300 text-xs text-center bg-white font-mono">
+                <!-- Split-Screen: Form (Left) & Real-Time Live Preview (Right) -->
+                <div class="p-5 md:p-6 bg-gradient-to-b from-orange-50/40 to-slate-50 border-b border-orange-100">
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                        
+                        <!-- Left Column: Form Controls (7 cols on desktop) -->
+                        <form id="promoForm" action="/admin/add_promotion" method="POST" enctype="multipart/form-data" class="lg:col-span-7 space-y-4">
+                            <div class="flex items-center justify-between pb-2 border-b border-orange-200/60">
+                                <h3 class="text-xs md:text-sm font-bold text-orange-950 uppercase tracking-wide flex items-center gap-2">
+                                    <span>✨</span> เพิ่มแพ็กเกจโปรโมชั่นใหม่ (Custom Image & Live Preview)
+                                </h3>
+                                <span class="text-[11px] text-slate-500 font-medium hidden sm:inline">พิมพ์แล้วตัวอย่างจะเปลี่ยนทันที</span>
                             </div>
+
+                            <!-- Row 1: Title & Tag -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <div class="flex items-center justify-between mb-1">
+                                        <label class="block text-xs font-semibold text-slate-700">ชื่อแพ็กเกจ*</label>
+                                        <span id="titleCounter" class="text-[10px] text-slate-400 font-mono">0/40</span>
+                                    </div>
+                                    <input type="text" id="promoTitleInput" name="title" required maxlength="40"
+                                           placeholder="เช่น ชุดตัดแว่นเริ่มต้น หรือ เลนส์โปรเกรสซีฟ" 
+                                           class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white shadow-xs transition">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">ป้ายกำกับ (Tag / Badge)</label>
+                                    <input type="text" id="promoTagInput" name="tag" placeholder="เช่น 🔥 โปรสุดคุ้ม หรือ 👑 BEST SELLER" 
+                                           class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white shadow-xs transition">
+                                </div>
+                            </div>
+
+                            <!-- Row 2: Price, Sort Order & Theme Color -->
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">ราคา (บาท)*</label>
+                                    <input type="text" id="promoPriceInput" name="price" required placeholder="เช่น 990 หรือ 1,490" 
+                                           class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white shadow-xs transition font-semibold">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">ลำดับการแสดงผล</label>
+                                    <input type="number" name="sort_order" value="1" min="1" max="99"
+                                           class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-center bg-white shadow-xs font-mono">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">เลือกสีธีมการ์ด</label>
+                                    <div class="flex items-center gap-2">
+                                        <input type="color" id="promoColorPicker" name="color" value="#EA580C"
+                                               class="w-10 h-10 p-0.5 rounded-xl border border-slate-300 cursor-pointer bg-white">
+                                        <span id="promoColorCode" class="text-xs font-mono text-slate-600 bg-slate-100 px-2 py-1.5 rounded-lg border border-slate-200">#EA580C</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Preset Swatches Quick Bar -->
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-500 mb-1.5">จานสีพรีเมียมแนะนำ (คลิกเพื่อเลือกทันที):</label>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <button type="button" onclick="setColorSwatch('#EA580C')" class="px-2.5 py-1 rounded-lg text-xs font-bold text-white shadow-xs transition transform hover:scale-105 cursor-pointer" style="background-color: #EA580C;">🟠 ส้ม</button>
+                                    <button type="button" onclick="setColorSwatch('#D97706')" class="px-2.5 py-1 rounded-lg text-xs font-bold text-white shadow-xs transition transform hover:scale-105 cursor-pointer" style="background-color: #D97706;">👑 ทอง</button>
+                                    <button type="button" onclick="setColorSwatch('#059669')" class="px-2.5 py-1 rounded-lg text-xs font-bold text-white shadow-xs transition transform hover:scale-105 cursor-pointer" style="background-color: #059669;">🟢 มรกต</button>
+                                    <button type="button" onclick="setColorSwatch('#4338CA')" class="px-2.5 py-1 rounded-lg text-xs font-bold text-white shadow-xs transition transform hover:scale-105 cursor-pointer" style="background-color: #4338CA;">🔵 รอยัลคราม</button>
+                                    <button type="button" onclick="setColorSwatch('#7C3AED')" class="px-2.5 py-1 rounded-lg text-xs font-bold text-white shadow-xs transition transform hover:scale-105 cursor-pointer" style="background-color: #7C3AED;">🟣 ม่วง</button>
+                                    <button type="button" onclick="setColorSwatch('#DB2777')" class="px-2.5 py-1 rounded-lg text-xs font-bold text-white shadow-xs transition transform hover:scale-105 cursor-pointer" style="background-color: #DB2777;">🌸 กุหลาบ</button>
+                                    <button type="button" onclick="setColorSwatch('#1E293B')" class="px-2.5 py-1 rounded-lg text-xs font-bold text-white shadow-xs transition transform hover:scale-105 cursor-pointer" style="background-color: #1E293B;">⚫ ดำพรีเมียม</button>
+                                </div>
+                            </div>
+
+                            <!-- Custom Image Upload Section -->
+                            <div class="space-y-2">
+                                <label class="block text-xs font-semibold text-slate-700">รูปภาพโปรโมชั่น (อัปโหลดรูปเอง / ลากไฟล์มาวาง)</label>
+                                
+                                <div id="dropZone" class="border-2 border-dashed border-orange-300 hover:border-orange-500 rounded-2xl p-4 text-center bg-white/80 cursor-pointer transition relative group">
+                                    <input type="file" id="promoFileInput" name="promo_image" accept="image/jpeg,image/png,image/webp" class="hidden">
+                                    <div id="dropZonePrompt" class="space-y-1.5">
+                                        <div class="w-10 h-10 mx-auto rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-xl group-hover:scale-110 transition">
+                                            📷
+                                        </div>
+                                        <p class="text-xs font-bold text-slate-800">คลิกเพื่อเลือกรูปภาพ หรือลากรูปมาวางที่นี่</p>
+                                        <p class="text-[11px] text-slate-400">รองรับไฟล์ JPG, PNG, WEBP (สูงสุด 5MB)</p>
+                                    </div>
+                                    <div id="dropZonePreview" class="hidden flex items-center justify-center gap-3">
+                                        <img id="thumbImg" src="" alt="Thumbnail" class="w-16 h-16 object-cover rounded-xl shadow-xs ring-2 ring-orange-400">
+                                        <div class="text-left text-xs">
+                                            <p id="fileNameLabel" class="font-bold text-slate-800 truncate max-w-[200px]"></p>
+                                            <p class="text-[11px] text-emerald-600 font-medium">✓ โหลดภาพตัวอย่างเรียบร้อย</p>
+                                            <button type="button" onclick="removeUploadedImage(event)" class="text-rose-600 hover:underline text-[11px] font-semibold mt-1 cursor-pointer">ลบรูปออก / ใช้ภาพพื้นฐาน</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[11px] text-slate-400">หรือระบุ URL รูปภาพ:</span>
+                                    <input type="url" id="promoUrlInput" name="image_url" placeholder="https://..." 
+                                           class="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-orange-400">
+                                </div>
+                            </div>
+
+                            <!-- Details -->
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">
+                                    จุดเด่น & รายละเอียดโปรโมชั่น (พิมพ์แยกทีละบรรทัด)
+                                </label>
+                                <textarea id="promoDetailsInput" name="details" rows="3" 
+                                          placeholder="✨ กรอบแว่นแฟชั่น น้ำหนักเบา (เลือกได้ทั้งร้าน)&#10;✨ เลนส์กรองแสงสีฟ้า 100% หรือเลนส์โปรเกรสซีฟ&#10;✨ ตรวจวัดสายตาฟรีด้วยระบบคอมพิวเตอร์&#10;🎁 ฟรีกล่องใส่แว่น + ผ้าเช็ดเลนส์ไมโครไฟเบอร์" 
+                                          class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white leading-relaxed shadow-xs"></textarea>
+                            </div>
+
+                            <div class="pt-1 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                                <span class="text-[11px] text-slate-400 font-light">* ข้อมูลราคาจะแสดงบนหน้าเว็บ ส่วนใน LINE จะเน้นจุดเด่นตามกฎของร้าน</span>
+                                <button type="submit" id="btnSubmitPromo" 
+                                        class="w-full sm:w-auto bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 active:scale-98 text-white font-bold px-6 py-2.5 rounded-xl text-xs shadow-md flex items-center justify-center gap-2 transition cursor-pointer">
+                                    <span>➕</span>
+                                    <span>บันทึกแพ็กเกจนี้</span>
+                                </button>
+                            </div>
+                        </form>
+
+                        <!-- Right Column: Sticky Real-Time Live Preview (5 cols on desktop) -->
+                        <div class="lg:col-span-5 lg:sticky lg:top-24 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-100 text-orange-900 text-xs font-bold border border-orange-200 shadow-2xs">
+                                    <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                                    <span>🔴 REAL-TIME LIVE PREVIEW</span>
+                                </div>
+                                <span class="text-[11px] text-slate-500">จำลองการแสดงผลจริง</span>
+                            </div>
+
+                            <!-- The Simulated Card -->
+                            <div class="max-w-[320px] mx-auto bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden flex flex-col justify-between transition-all duration-300 hover:shadow-2xl">
+                                <!-- Card Header -->
+                                <div id="previewCardHeader" class="relative overflow-hidden p-4 text-white transition-colors duration-300" style="background-color: #EA580C;">
+                                    <!-- Dynamic Image Background Layer -->
+                                    <div id="previewCardBg" class="absolute inset-0 bg-cover bg-center opacity-25 mix-blend-overlay pointer-events-none transition-all duration-500 filter blur-[0.2px]"
+                                         style="background-image: url('/static/images/bg_model_noya.jpg');"></div>
+                                    <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent pointer-events-none"></div>
+
+                                    <div class="relative z-10 space-y-1">
+                                        <span id="previewTag" class="inline-block text-[10px] bg-black/35 backdrop-blur-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider text-amber-200 border border-white/20">
+                                            🔥 HOT DEAL
+                                        </span>
+                                        <h4 id="previewTitle" class="font-bold text-lg leading-snug drop-shadow-sm text-white">
+                                            ชื่อแพ็กเกจโปรโมชั่น
+                                        </h4>
+                                        <div class="flex items-baseline gap-1.5 pt-1">
+                                            <span class="text-xs text-amber-200 font-medium">ราคาพิเศษ</span>
+                                            <span id="previewPrice" class="text-2xl font-black text-amber-300 drop-shadow-sm">฿ 990.-</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Card Body -->
+                                <div id="previewBody" class="p-4 text-xs text-slate-700 space-y-2 bg-slate-50/70 min-h-[120px]">
+                                    <p class="text-[11px] text-slate-700 flex items-start gap-1.5">
+                                        <span class="text-emerald-600 font-bold">✓</span>
+                                        <span>กรอบแว่นแฟชั่น น้ำหนักเบา (เลือกได้ทั้งร้าน)</span>
+                                    </p>
+                                    <p class="text-[11px] text-slate-700 flex items-start gap-1.5">
+                                        <span class="text-emerald-600 font-bold">✓</span>
+                                        <span>เลนส์ Multicoat สารเคลือบตัดแสงสะท้อน</span>
+                                    </p>
+                                    <p class="text-[11px] text-slate-700 flex items-start gap-1.5">
+                                        <span class="text-emerald-600 font-bold">✓</span>
+                                        <span>ตรวจวัดสายตาฟรีด้วยระบบคอมพิวเตอร์</span>
+                                    </p>
+                                </div>
+
+                                <!-- Card Footer Mock Button -->
+                                <div class="p-3 bg-white border-t border-slate-100 flex items-center justify-between text-xs">
+                                    <button id="previewBtnMock" type="button" class="w-full text-white font-bold py-2 rounded-xl text-center shadow-xs transition cursor-default" style="background-color: #EA580C;">
+                                        💬 สนใจแพ็กเกจนี้
+                                    </button>
+                                </div>
+                            </div>
+
+                            <p class="text-center text-[11px] text-slate-400">
+                                💡 การ์ดนี้จะอัปเดตไปแสดงผลบน LINE Flex Carousel ของลูกค้าทันที
+                            </p>
                         </div>
-                    </div>
 
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-700 mb-1">
-                            รายละเอียดไฮไลท์ (พิมพ์ 1 บรรทัดต่อ 1 ข้อความ หรือใส่เครื่องหมาย ✨ ด้านหน้า)
-                        </label>
-                        <textarea name="details" rows="3" placeholder="✨ กรอบแว่นแฟชั่น น้ำหนักเบา (เลือกได้ทั้งร้าน)&#10;✨ เลนส์ Multicoat สารเคลือบตัดแสงสะท้อน&#10;✨ ป้องกันรอยขีดข่วน + ภาพคมชัดสบายตา&#10;✨ ตรวจวัดสายตาฟรีด้วยระบบคอมพิวเตอร์&#10;🎁 ฟรีกล่องใส่แว่น + ผ้าเช็ดเลนส์ไมโครไฟเบอร์" 
-                                  class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white leading-relaxed"></textarea>
                     </div>
-
-                    <div class="flex justify-end">
-                        <button type="submit" 
-                                class="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 active:scale-98 text-white font-bold px-6 py-2.5 rounded-xl text-xs shadow-md flex items-center gap-2 transition">
-                            <span>➕</span> บันทึกแพ็กเกจนี้
-                        </button>
-                    </div>
-                </form>
+                </div>
 
                 <!-- รายการโปรโมชั่นที่มีอยู่ -->
                 <div class="p-5 space-y-3">
@@ -1072,6 +1199,203 @@
                 btn.disabled = false;
             }
         }
+
+        // ==========================================
+        // PROMOTION LIVE PREVIEW & FILE UPLOAD
+        // ==========================================
+        const titleInput = document.getElementById('promoTitleInput');
+        const priceInput = document.getElementById('promoPriceInput');
+        const tagInput = document.getElementById('promoTagInput');
+        const colorPicker = document.getElementById('promoColorPicker');
+        const detailsInput = document.getElementById('promoDetailsInput');
+        const fileInput = document.getElementById('promoFileInput');
+        const urlInput = document.getElementById('promoUrlInput');
+        const dropZone = document.getElementById('dropZone');
+
+        const previewTitle = document.getElementById('previewTitle');
+        const previewPrice = document.getElementById('previewPrice');
+        const previewTag = document.getElementById('previewTag');
+        const previewHeader = document.getElementById('previewCardHeader');
+        const previewBg = document.getElementById('previewCardBg');
+        const previewBody = document.getElementById('previewBody');
+        const previewBtnMock = document.getElementById('previewBtnMock');
+        const colorCodeSpan = document.getElementById('promoColorCode');
+        const titleCounter = document.getElementById('titleCounter');
+
+        const defaultBgImage = '/static/images/bg_model_noya.jpg';
+        let currentBgImage = defaultBgImage;
+
+        function updatePromoPreview() {
+            if (!titleInput) return;
+
+            // 1. Title & Character counter
+            const titleVal = titleInput.value.trim() || 'ชื่อแพ็กเกจโปรโมชั่น';
+            if (previewTitle) previewTitle.innerText = titleVal;
+            if (titleCounter) titleCounter.innerText = `${titleInput.value.length}/40`;
+
+            // 2. Tag
+            const tagVal = (tagInput && tagInput.value.trim()) || '🔥 HOT DEAL';
+            if (previewTag) previewTag.innerText = tagVal;
+
+            // 3. Price formatting
+            if (previewPrice) {
+                const rawPrice = (priceInput && priceInput.value.trim()) || '';
+                if (rawPrice) {
+                    const cleanPrice = rawPrice.replace(/[^\d,]/g, '');
+                    previewPrice.innerText = `฿ ${cleanPrice || rawPrice}.-`;
+                } else {
+                    previewPrice.innerText = '฿ 990.-';
+                }
+            }
+
+            // 4. Theme Color
+            const colorVal = (colorPicker && colorPicker.value) || '#EA580C';
+            if (previewHeader) previewHeader.style.backgroundColor = colorVal;
+            if (previewBtnMock) previewBtnMock.style.backgroundColor = colorVal;
+            if (colorCodeSpan) colorCodeSpan.innerText = colorVal.toUpperCase();
+
+            // 5. Details list
+            if (previewBody) {
+                const detailsVal = (detailsInput && detailsInput.value.trim()) || '';
+                if (detailsVal) {
+                    const lines = detailsVal.split('\n').filter(l => l.trim().length > 0);
+                    previewBody.innerHTML = lines.map(line => {
+                        const clean = line.replace(/^[✨🎁✓•-]\s*/, '');
+                        return `<p class="text-[11px] text-slate-700 flex items-start gap-1.5"><span class="text-emerald-600 font-bold">✓</span><span>${clean}</span></p>`;
+                    }).join('');
+                } else {
+                    previewBody.innerHTML = `
+                        <p class="text-[11px] text-slate-700 flex items-start gap-1.5"><span class="text-emerald-600 font-bold">✓</span><span>กรอบแว่นแฟชั่น น้ำหนักเบา (เลือกได้ทั้งร้าน)</span></p>
+                        <p class="text-[11px] text-slate-700 flex items-start gap-1.5"><span class="text-emerald-600 font-bold">✓</span><span>เลนส์ Multicoat สารเคลือบตัดแสงสะท้อน</span></p>
+                        <p class="text-[11px] text-slate-700 flex items-start gap-1.5"><span class="text-emerald-600 font-bold">✓</span><span>ตรวจวัดสายตาฟรีด้วยระบบคอมพิวเตอร์</span></p>
+                    `;
+                }
+            }
+
+            // 6. Background image
+            if (previewBg) {
+                previewBg.style.backgroundImage = `url('${currentBgImage}')`;
+            }
+        }
+
+        function setColorSwatch(hex) {
+            if (colorPicker) {
+                colorPicker.value = hex;
+                updatePromoPreview();
+            }
+        }
+
+        // File drop & upload handler
+        if (dropZone && fileInput) {
+            dropZone.addEventListener('click', (e) => {
+                if (!e.target.closest('button')) {
+                    fileInput.click();
+                }
+            });
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    dropZone.classList.add('border-orange-500', 'bg-orange-50/50');
+                });
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    dropZone.classList.remove('border-orange-500', 'bg-orange-50/50');
+                });
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                const files = e.dataTransfer.files;
+                if (files && files.length > 0) {
+                    fileInput.files = files;
+                    handleFileSelect(files[0]);
+                }
+            });
+
+            fileInput.addEventListener('change', () => {
+                if (fileInput.files && fileInput.files[0]) {
+                    handleFileSelect(fileInput.files[0]);
+                }
+            });
+        }
+
+        function handleFileSelect(file) {
+            if (!file.type.startsWith('image/')) {
+                alert('กรุณาเลือกไฟล์รูปภาพ (JPG, PNG, WEBP) ครับ');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                currentBgImage = e.target.result;
+                const promptEl = document.getElementById('dropZonePrompt');
+                const previewEl = document.getElementById('dropZonePreview');
+                const thumbEl = document.getElementById('thumbImg');
+                const nameEl = document.getElementById('fileNameLabel');
+                if (promptEl) promptEl.classList.add('hidden');
+                if (previewEl) previewEl.classList.remove('hidden');
+                if (thumbEl) thumbEl.src = currentBgImage;
+                if (nameEl) nameEl.innerText = file.name;
+                if (urlInput) urlInput.value = '';
+                updatePromoPreview();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeUploadedImage(e) {
+            if (e) e.stopPropagation();
+            if (fileInput) fileInput.value = '';
+            currentBgImage = defaultBgImage;
+            const promptEl = document.getElementById('dropZonePrompt');
+            const previewEl = document.getElementById('dropZonePreview');
+            const thumbEl = document.getElementById('thumbImg');
+            if (promptEl) promptEl.classList.remove('hidden');
+            if (previewEl) previewEl.classList.add('hidden');
+            if (thumbEl) thumbEl.src = '';
+            updatePromoPreview();
+        }
+
+        if (urlInput) {
+            urlInput.addEventListener('input', () => {
+                const val = urlInput.value.trim();
+                if (val) {
+                    currentBgImage = val;
+                    if (fileInput) fileInput.value = '';
+                    const promptEl = document.getElementById('dropZonePrompt');
+                    const previewEl = document.getElementById('dropZonePreview');
+                    if (promptEl) promptEl.classList.remove('hidden');
+                    if (previewEl) previewEl.classList.add('hidden');
+                    updatePromoPreview();
+                }
+            });
+        }
+
+        // Bind live listeners
+        [titleInput, priceInput, tagInput, colorPicker, detailsInput].forEach(el => {
+            if (el) {
+                el.addEventListener('input', updatePromoPreview);
+                el.addEventListener('change', updatePromoPreview);
+            }
+        });
+
+        // Form submit loading state
+        const promoForm = document.getElementById('promoForm');
+        if (promoForm) {
+            promoForm.addEventListener('submit', () => {
+                const btn = document.getElementById('btnSubmitPromo');
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<span>⏳ กำลังบันทึกข้อมูลและอัปโหลดภาพ...</span>';
+                }
+            });
+        }
+
+        // Initialize preview on DOM ready
+        window.addEventListener('DOMContentLoaded', () => {
+            updatePromoPreview();
+        });
     </script>
 </body>
 </html>

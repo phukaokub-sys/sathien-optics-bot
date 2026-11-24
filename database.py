@@ -298,6 +298,7 @@ def init_db():
         pd TEXT,
         image_url TEXT,
         notes TEXT,
+        examiner TEXT DEFAULT 'คุณเสถียร',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
     """)
@@ -319,6 +320,7 @@ def init_db():
         ("add_l", "TEXT"),
         ("pd", "TEXT"),
         ("notes", "TEXT"),
+        ("examiner", "TEXT DEFAULT 'คุณเสถียร'"),
     ]
     for col_name, col_type in new_cols:
         if col_name not in existing_cols:
@@ -558,15 +560,19 @@ def add_booth_schedule(date_range, location, note=""):
 def add_prescription(line_user_id, phone, customer_name, patient_name, relation, 
                      sph_r="", cyl_r="", axis_r="", add_r="",
                      sph_l="", cyl_l="", axis_l="", add_l="",
-                     pd="", image_url="", notes="", exam_date=""):
+                     pd="", image_url="", notes="", exam_date="", examiner="คุณเสถียร"):
     conn = get_db()
     cursor = conn.cursor()
     if not exam_date:
         exam_date = datetime.now().strftime("%d/%m/%Y")
     if not patient_name:
         patient_name = customer_name or "คุณลูกค้า"
+    if not customer_name:
+        customer_name = patient_name
     if not relation:
         relation = "เจ้าของบัญชี"
+    if not examiner:
+        examiner = "คุณเสถียร (ช่างผู้เชี่ยวชาญ)"
 
     # If line_user_id is not provided, try to find from phone only
     if not line_user_id and phone:
@@ -582,13 +588,13 @@ def add_prescription(line_user_id, phone, customer_name, patient_name, relation,
         line_user_id, phone, customer_name, patient_name, relation, exam_date,
         sph_r, cyl_r, axis_r, add_r,
         sph_l, cyl_l, axis_l, add_l,
-        pd, image_url, notes
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        pd, image_url, notes, examiner
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         line_user_id, phone, customer_name, patient_name, relation, exam_date,
         sph_r, cyl_r, axis_r, add_r,
         sph_l, cyl_l, axis_l, add_l,
-        pd, image_url, notes
+        pd, image_url, notes, examiner
     ))
     rx_id = cursor.lastrowid
     conn.commit()

@@ -620,10 +620,21 @@
                                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-purple-600 bg-white">
                         </div>
                         <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1">ชื่อผู้ตรวจวัดสายตา*</label>
-                            <input type="text" name="patient_name" required placeholder="เช่น น้องพีม, คุณพ่อสมชาย, คุณแม่ดาว" 
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">ชื่อลูกค้า / เจ้าของเบอร์โทร</label>
+                            <input type="text" name="customer_name" placeholder="เช่น คุณสมศรี, คุณวิชัย" 
                                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-purple-600 bg-white">
                         </div>
+                        <div>
+                            <label class="block text-xs font-bold text-purple-900 mb-1 flex items-center justify-between">
+                                <span>ชื่อผู้ได้รับการตรวจวัดสายตา*</span>
+                                <span class="text-[10px] text-purple-600 font-normal">คนวัดสายตา</span>
+                            </label>
+                            <input type="text" name="patient_name" required placeholder="เช่น น้องพีม, คุณพ่อสมชาย, ตัวเอง" 
+                                   class="w-full px-3.5 py-2.5 rounded-xl border-2 border-purple-400 text-sm focus:outline-none focus:ring-2 focus:ring-purple-600 bg-white font-medium shadow-sm">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                         <div>
                             <label class="block text-xs font-semibold text-slate-700 mb-1">ความสัมพันธ์ (กรณี LINE เดียวใช้ตรวจหลายคน)</label>
                             <select name="relation" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-purple-600 bg-white font-medium">
@@ -633,6 +644,19 @@
                                 <option value="คู่สมรส (สามี/ภรรยา)">คู่สมรส (สามี/ภรรยา)</option>
                                 <option value="ญาติ / เพื่อน">ญาติ / เพื่อน</option>
                             </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">ช่างผู้ตรวจวัดสายตา</label>
+                            <select name="examiner" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-purple-600 bg-white font-medium">
+                                <option value="คุณเสถียร (ช่างผู้เชี่ยวชาญ)">คุณเสถียร (ช่างผู้เชี่ยวชาญ)</option>
+                                <option value="คุณนก (ดูแลร้าน/ส่งแว่น)">คุณนก (ดูแลร้าน/ส่งแว่น)</option>
+                                <option value="คุณภูเขา (แอดมิน)">คุณภูเขา (แอดมิน)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">วันที่ตรวจวัดสายตา</label>
+                            <input type="text" name="exam_date" placeholder="เช่น 25/11/2026 (เว้นว่าง = วันนี้)" 
+                                   class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-purple-600 bg-white">
                         </div>
                     </div>
 
@@ -732,10 +756,18 @@
 
                             <div class="flex-1 space-y-1 text-xs">
                                 <div class="flex items-center justify-between">
-                                    <span class="font-bold text-slate-900 text-sm">{{ p.patient_name }}</span>
+                                    <span class="font-bold text-slate-900 text-sm">👤 {{ p.patient_name }}</span>
                                     <span class="bg-purple-100 text-purple-800 text-[10px] px-2 py-0.5 rounded-full font-medium">{{ p.relation }}</span>
                                 </div>
-                                <p class="text-slate-500">📞 {{ p.phone }} • วันที่: {{ p.exam_date }}</p>
+                                <p class="text-slate-500">
+                                    {% if p.customer_name and p.customer_name != p.patient_name %}
+                                    <span class="text-slate-800 font-medium">ลูกค้า: {{ p.customer_name }}</span> • 
+                                    {% endif %}
+                                    📞 {{ p.phone }} • วันที่: {{ p.exam_date }}
+                                    {% if p.examiner %}
+                                    <span class="text-purple-700 block text-[11px] font-medium">👨‍⚕️ ช่างตรวจ: {{ p.examiner }}</span>
+                                    {% endif %}
+                                </p>
                                 <p class="text-slate-700 font-mono text-[11px]">
                                     <strong>R:</strong> {{ p.sph_r or '-' }}/{{ p.cyl_r or '-' }} 
                                     <strong class="ml-2">L:</strong> {{ p.sph_l or '-' }}/{{ p.cyl_l or '-' }}

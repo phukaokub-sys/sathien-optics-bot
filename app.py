@@ -474,8 +474,11 @@ def get_tracking_flex(order=None, user_id=""):
 
 def build_prescription_bubble(rx, base_url=BASE_URL):
     p_name = rx.get("patient_name") or rx.get("customer_name") or "คุณลูกค้า"
+    c_name = rx.get("customer_name") or p_name
     relation = rx.get("relation") or "เจ้าของบัญชี"
+    examiner = rx.get("examiner") or "คุณเสถียร"
     exam_date = rx.get("exam_date") or "-"
+    phone = rx.get("phone") or ""
     sph_r = rx.get("sph_r") or "-"
     cyl_r = rx.get("cyl_r") or "-"
     axis_r = rx.get("axis_r") or "-"
@@ -500,6 +503,16 @@ def build_prescription_bubble(rx, base_url=BASE_URL):
     if add_l and add_l != "-":
         l_details += f" | ADD: {add_l}"
 
+    header_contents = [
+        {"type": "text", "text": f"👓 สมาชิก: {relation}", "weight": "bold", "size": "xs", "color": "#DDD6FE"},
+        {"type": "text", "text": f"👤 {p_name}", "weight": "bold", "size": "xl", "color": "#FFFFFF", "margin": "xs"},
+    ]
+    if c_name and c_name != p_name:
+        header_contents.append({"type": "text", "text": f"📱 ลูกค้า: {c_name} ({phone})", "size": "xs", "color": "#E9D5FF", "margin": "xs"})
+    elif phone:
+        header_contents.append({"type": "text", "text": f"📱 เบอร์ติดต่อ: {phone}", "size": "xs", "color": "#E9D5FF", "margin": "xs"})
+    header_contents.append({"type": "text", "text": f"📅 วันที่ตรวจ: {exam_date} • 👨‍⚕️ ช่าง: {examiner}", "size": "xxs", "color": "#DDD6FE", "margin": "xs"})
+
     bubble = {
         "type": "bubble",
         "header": {
@@ -507,11 +520,7 @@ def build_prescription_bubble(rx, base_url=BASE_URL):
             "layout": "vertical",
             "backgroundColor": "#6D28D9",
             "paddingAll": "lg",
-            "contents": [
-                {"type": "text", "text": f"👓 สมาชิก: {relation}", "weight": "bold", "size": "xs", "color": "#DDD6FE"},
-                {"type": "text", "text": f"{p_name}", "weight": "bold", "size": "xl", "color": "#FFFFFF", "margin": "xs"},
-                {"type": "text", "text": f"📅 ตรวจวัดเมื่อ: {exam_date}", "size": "xs", "color": "#EDE9FE", "margin": "xs"}
-            ]
+            "contents": header_contents
         },
         "body": {
             "type": "box",
@@ -1793,6 +1802,7 @@ def add_prescription_route():
     add_l = request.form.get("add_l", "").strip()
     pd = request.form.get("pd", "").strip()
     notes = request.form.get("notes", "").strip()
+    examiner = request.form.get("examiner", "คุณเสถียร (ช่างผู้เชี่ยวชาญ)").strip()
     line_user_id = request.form.get("line_user_id", "").strip()
 
     # Handle image upload
@@ -1819,15 +1829,18 @@ def add_prescription_route():
         relation=relation,
         sph_r=sph_r, cyl_r=cyl_r, axis_r=axis_r, add_r=add_r,
         sph_l=sph_l, cyl_l=cyl_l, axis_l=axis_l, add_l=add_l,
-        pd=pd, image_url=image_url, notes=notes, exam_date=exam_date
+        pd=pd, image_url=image_url, notes=notes, exam_date=exam_date,
+        examiner=examiner
     )
 
     # Build full interactive prescription card
     rx_data = {
         "id": rx_id,
+        "phone": phone,
         "patient_name": patient_name,
         "customer_name": customer_name,
         "relation": relation,
+        "examiner": examiner,
         "exam_date": exam_date or datetime.now().strftime("%d/%m/%Y"),
         "sph_r": sph_r, "cyl_r": cyl_r, "axis_r": axis_r, "add_r": add_r,
         "sph_l": sph_l, "cyl_l": cyl_l, "axis_l": axis_l, "add_l": add_l,
@@ -1844,7 +1857,10 @@ def add_prescription_route():
 
     # 1. ALWAYS push to ALL active admins (คุณภูเขา, คุณนก, คุณเสถียร) 100%
     try:
-        admin_alert_text = f"📋 [บันทึกสลิปสายตาใหม่] {patient_name} ({relation})\n📞 เบอร์โทร: {phone}"
+        admin_alert_text = f"📋 [บันทึกสลิปสายตาใหม่]\n👤 ผู้ได้รับการตรวจ: {patient_name} ({relation})"
+        if customer_name and customer_name != patient_name:
+            admin_alert_text += f"\n📱 ลูกค้า: {customer_name}"
+        admin_alert_text += f"\n📞 เบอร์โทร: {phone}\n👨‍⚕️ ช่างตรวจ: {examiner}"
         admin_count = notify_all_admins(
             alert_text=admin_alert_text,
             flex_message=rx_flex

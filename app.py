@@ -1489,13 +1489,7 @@ os.makedirs(PROMOTIONS_FOLDER, exist_ok=True)
 
 @app.route("/", methods=["GET"])
 def home():
-    return render_template(
-        "admin_dashboard.html",
-        orders=database.get_recent_orders(),
-        schedules=database.get_active_schedules(),
-        prescriptions=database.get_all_prescriptions(),
-        promotions=database.get_all_promotions()
-    )
+    return redirect("/admin")
 
 @app.route("/form/address", methods=["GET"])
 def address_form():

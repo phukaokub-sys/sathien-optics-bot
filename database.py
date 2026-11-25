@@ -2,6 +2,8 @@ import sqlite3
 import os
 import json
 import base64
+import time
+import random
 import threading
 import urllib.request
 import urllib.error
@@ -15,11 +17,15 @@ GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "").strip()
 GITHUB_REPO = os.getenv("GITHUB_REPO", "").strip()
 GITHUB_DB_BRANCH = os.getenv("GITHUB_DB_BRANCH", "db-storage").strip()
 
-def restore_db_from_cloud():
+_cloud_lock = threading.Lock()
+_cloud_backup_blocked = False
+
+def restore_db_from_cloud(max_retries=3):
     """
     Downloads the persistent database file from GitHub cloud storage branch on startup.
-    This prevents database wipeout when Render spins up a new container or redeploys!
+    Retries on transient failures and prevents overwriting remote DB if restore fails cleanly.
     """
+    global _cloud_backup_blocked
     token = os.getenv("GITHUB_TOKEN", GITHUB_TOKEN).strip()
     repo = os.getenv("GITHUB_REPO", GITHUB_REPO).strip()
     branch = os.getenv("GITHUB_DB_BRANCH", GITHUB_DB_BRANCH).strip()
@@ -28,100 +34,132 @@ def restore_db_from_cloud():
         print("[INFO] Cloud DB persistence not configured (GITHUB_TOKEN/GITHUB_REPO unset). Using local SQLite.")
         return False
 
-    try:
-        url = f"https://api.github.com/repos/{repo}/contents/sathien_optics.db?ref={branch}"
-        req = urllib.request.Request(
-            url,
-            headers={
-                "Authorization": f"token {token}",
-                "Accept": "application/vnd.github.v3+json",
-                "User-Agent": "Sathien-Optics-Bot"
-            }
-        )
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-            raw_b64 = data.get("content", "")
-            if raw_b64:
-                db_bytes = base64.b64decode(raw_b64)
-                with open(DB_PATH, "wb") as f:
-                    f.write(db_bytes)
-                print(f"[SUCCESS] Restored {len(db_bytes)} bytes of sathien_optics.db from cloud branch '{branch}'!")
-                return True
-    except urllib.error.HTTPError as he:
-        if he.code == 404:
-            print(f"[INFO] Cloud branch '{branch}' has no sathien_optics.db yet. Initializing fresh.")
-        else:
-            print(f"[WARN] HTTP {he.code} while restoring database from cloud: {he}")
-    except Exception as e:
-        print(f"[WARN] Could not restore database from cloud: {e}")
+    url = f"https://api.github.com/repos/{repo}/contents/sathien_optics.db?ref={branch}"
+    headers = {
+        "Authorization": f"token {token}",
+        "Accept": "application/vnd.github.v3+json",
+        "User-Agent": "Sathien-Optics-Bot"
+    }
 
+    for attempt in range(max_retries):
+        try:
+            req = urllib.request.Request(url, headers=headers)
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                raw_b64 = data.get("content", "")
+                if raw_b64:
+                    db_bytes = base64.b64decode(raw_b64)
+                    with open(DB_PATH, "wb") as f:
+                        f.write(db_bytes)
+                    _cloud_backup_blocked = False
+                    print(f"[SUCCESS] Restored {len(db_bytes)} bytes of sathien_optics.db from cloud branch '{branch}'!")
+                    return True
+        except urllib.error.HTTPError as he:
+            if he.code == 404:
+                _cloud_backup_blocked = False
+                print(f"[INFO] Cloud branch '{branch}' has no sathien_optics.db yet. Initializing fresh.")
+                return False
+            print(f"[WARN] HTTP {he.code} while restoring database (attempt {attempt + 1}/{max_retries}): {he}")
+        except Exception as e:
+            print(f"[WARN] Error restoring database from cloud (attempt {attempt + 1}/{max_retries}): {e}")
+
+        if attempt < max_retries - 1:
+            time.sleep(1.0 * (attempt + 1))
+
+    # Avoid overwriting remote db-storage with an empty fallback DB if restore failed
+    if not os.path.exists(DB_PATH):
+        _cloud_backup_blocked = True
+        print("[ERROR] Cloud DB restore failed without local DB; blocking cloud overwrite to protect existing data.")
     return False
+
+
+def _upload_to_github_cloud(local_filepath, remote_path, commit_message, timeout=15, max_retries=3):
+    """
+    Thread-safe upload of any file to GitHub cloud branch 'db-storage' with 409 Conflict retry.
+    """
+    token = os.getenv("GITHUB_TOKEN", GITHUB_TOKEN).strip()
+    repo = os.getenv("GITHUB_REPO", GITHUB_REPO).strip()
+    branch = os.getenv("GITHUB_DB_BRANCH", GITHUB_DB_BRANCH).strip()
+
+    if not token or not repo or not os.path.exists(local_filepath):
+        return None
+
+    with _cloud_lock:
+        try:
+            with open(local_filepath, "rb") as f:
+                content_b64 = base64.b64encode(f.read()).decode("utf-8")
+        except Exception as e:
+            print(f"[WARN] Failed reading {local_filepath} for cloud upload: {e}")
+            return None
+
+        headers_base = {
+            "Authorization": f"token {token}",
+            "Accept": "application/vnd.github.v3+json",
+            "User-Agent": "Sathien-Optics-Bot"
+        }
+
+        for attempt in range(max_retries):
+            sha = None
+            get_url = f"https://api.github.com/repos/{repo}/contents/{remote_path}?ref={branch}"
+            get_req = urllib.request.Request(get_url, headers=headers_base)
+            try:
+                with urllib.request.urlopen(get_req, timeout=8) as r:
+                    meta = json.loads(r.read().decode("utf-8"))
+                    sha = meta.get("sha")
+            except urllib.error.HTTPError as he:
+                if he.code != 404:
+                    print(f"[WARN] Error fetching remote SHA for {remote_path}: {he.code}")
+
+            payload = {
+                "message": commit_message,
+                "content": content_b64,
+                "branch": branch
+            }
+            if sha:
+                payload["sha"] = sha
+
+            put_url = f"https://api.github.com/repos/{repo}/contents/{remote_path}"
+            put_req = urllib.request.Request(
+                put_url,
+                data=json.dumps(payload).encode("utf-8"),
+                headers={**headers_base, "Content-Type": "application/json"},
+                method="PUT"
+            )
+            try:
+                with urllib.request.urlopen(put_req, timeout=timeout) as r:
+                    res = json.loads(r.read().decode("utf-8"))
+                    download_url = res.get("content", {}).get("download_url") or f"https://raw.githubusercontent.com/{repo}/{branch}/{remote_path}"
+                    commit_sha = res.get("commit", {}).get("sha", "")[:8]
+                    print(f"[SUCCESS] Cloud synced {remote_path} -> branch '{branch}' (Commit: {commit_sha})")
+                    return download_url
+            except urllib.error.HTTPError as he:
+                if he.code == 409 and attempt < max_retries - 1:
+                    wait_s = 0.6 * (attempt + 1) + random.uniform(0.1, 0.4)
+                    print(f"[INFO] Cloud branch busy (409) for {remote_path}, retrying in {wait_s:.1f}s...")
+                    time.sleep(wait_s)
+                    continue
+                print(f"[WARN] Failed to upload {remote_path} to cloud: HTTP {he.code} {he.reason}")
+                return None
+            except Exception as e:
+                print(f"[WARN] Failed to upload {remote_path} to cloud: {e}")
+                return None
+
+    return None
 
 
 def backup_db_to_cloud():
     """
     Uploads the latest SQLite database file to GitHub cloud storage branch.
     """
-    token = os.getenv("GITHUB_TOKEN", GITHUB_TOKEN).strip()
-    repo = os.getenv("GITHUB_REPO", GITHUB_REPO).strip()
-    branch = os.getenv("GITHUB_DB_BRANCH", GITHUB_DB_BRANCH).strip()
-
-    if not token or not repo or not os.path.exists(DB_PATH):
+    if _cloud_backup_blocked:
+        print("[WARN] Cloud backup skipped because startup restore failed without a local DB.")
         return False
-
-    try:
-        # 1. Read local DB
-        with open(DB_PATH, "rb") as f:
-            content_b64 = base64.b64encode(f.read()).decode("utf-8")
-
-        # 2. Get current SHA if file exists
-        sha = None
-        get_url = f"https://api.github.com/repos/{repo}/contents/sathien_optics.db?ref={branch}"
-        get_req = urllib.request.Request(
-            get_url,
-            headers={
-                "Authorization": f"token {token}",
-                "Accept": "application/vnd.github.v3+json",
-                "User-Agent": "Sathien-Optics-Bot"
-            }
-        )
-        try:
-            with urllib.request.urlopen(get_req, timeout=8) as r:
-                meta = json.loads(r.read().decode("utf-8"))
-                sha = meta.get("sha")
-        except urllib.error.HTTPError as he:
-            if he.code != 404:
-                print(f"[WARN] Error fetching remote SHA for backup: {he.code}")
-
-        # 3. Put file to GitHub
-        payload = {
-            "message": "Automated SQLite database cloud backup [skip ci]",
-            "content": content_b64,
-            "branch": branch
-        }
-        if sha:
-            payload["sha"] = sha
-
-        put_url = f"https://api.github.com/repos/{repo}/contents/sathien_optics.db"
-        put_req = urllib.request.Request(
-            put_url,
-            data=json.dumps(payload).encode("utf-8"),
-            headers={
-                "Authorization": f"token {token}",
-                "Accept": "application/vnd.github.v3+json",
-                "Content-Type": "application/json",
-                "User-Agent": "Sathien-Optics-Bot"
-            },
-            method="PUT"
-        )
-        with urllib.request.urlopen(put_req, timeout=12) as r:
-            res = json.loads(r.read().decode("utf-8"))
-            commit_sha = res.get("commit", {}).get("sha", "")[:8]
-            print(f"[SUCCESS] Database backed up to cloud branch '{branch}' (Commit: {commit_sha})")
-            return True
-    except Exception as e:
-        print(f"[WARN] Failed to backup database to cloud: {e}")
-        return False
+    return bool(_upload_to_github_cloud(
+        DB_PATH,
+        "sathien_optics.db",
+        "Automated SQLite database cloud backup [skip ci]",
+        timeout=12
+    ))
 
 
 def async_backup_db():
@@ -136,65 +174,12 @@ def upload_file_to_cloud(local_filepath, remote_path):
     Uploads any media file (image/slip/promo) to the persistent GitHub cloud branch 'db-storage'.
     Returns the permanent public raw URL or None.
     """
-    token = os.getenv("GITHUB_TOKEN", GITHUB_TOKEN).strip()
-    repo = os.getenv("GITHUB_REPO", GITHUB_REPO).strip()
-    branch = os.getenv("GITHUB_DB_BRANCH", GITHUB_DB_BRANCH).strip()
-
-    if not token or not repo or not os.path.exists(local_filepath):
-        return None
-
-    try:
-        with open(local_filepath, "rb") as f:
-            content_b64 = base64.b64encode(f.read()).decode("utf-8")
-
-        # 1. Check if remote file exists to obtain sha
-        sha = None
-        get_url = f"https://api.github.com/repos/{repo}/contents/{remote_path}?ref={branch}"
-        get_req = urllib.request.Request(
-            get_url,
-            headers={
-                "Authorization": f"token {token}",
-                "Accept": "application/vnd.github.v3+json",
-                "User-Agent": "Sathien-Optics-Bot"
-            }
-        )
-        try:
-            with urllib.request.urlopen(get_req, timeout=8) as r:
-                meta = json.loads(r.read().decode("utf-8"))
-                sha = meta.get("sha")
-        except urllib.error.HTTPError as he:
-            if he.code != 404:
-                print(f"[WARN] Error fetching remote SHA for {remote_path}: {he.code}")
-
-        # 2. Put file to GitHub
-        payload = {
-            "message": f"Upload cloud media {remote_path} [skip ci]",
-            "content": content_b64,
-            "branch": branch
-        }
-        if sha:
-            payload["sha"] = sha
-
-        put_url = f"https://api.github.com/repos/{repo}/contents/{remote_path}"
-        put_req = urllib.request.Request(
-            put_url,
-            data=json.dumps(payload).encode("utf-8"),
-            headers={
-                "Authorization": f"token {token}",
-                "Accept": "application/vnd.github.v3+json",
-                "Content-Type": "application/json",
-                "User-Agent": "Sathien-Optics-Bot"
-            },
-            method="PUT"
-        )
-        with urllib.request.urlopen(put_req, timeout=15) as r:
-            res = json.loads(r.read().decode("utf-8"))
-            download_url = res.get("content", {}).get("download_url") or f"https://raw.githubusercontent.com/{repo}/{branch}/{remote_path}"
-            print(f"[SUCCESS] Uploaded {remote_path} to cloud branch '{branch}' -> {download_url}")
-            return download_url
-    except Exception as e:
-        print(f"[WARN] Failed to upload {remote_path} to cloud: {e}")
-        return None
+    return _upload_to_github_cloud(
+        local_filepath,
+        remote_path,
+        f"Upload cloud media {remote_path} [skip ci]",
+        timeout=15
+    )
 
 
 def async_upload_file_to_cloud(local_filepath, remote_path):

@@ -5,3 +5,5 @@ debug_*.png
 test_*.png
 test_*.py
 cloudflared.exe
+sathien_optics.db
+static/promotions/

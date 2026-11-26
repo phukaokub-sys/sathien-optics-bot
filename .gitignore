@@ -7,3 +7,12 @@ test_*.py
 cloudflared.exe
 sathien_optics.db
 static/promotions/
+
+# Private customer data & local backups (never upload to GitHub)
+static/prescriptions/
+backups/
+*.db
+*.db-journal
+
+# Old design experiments & unused code (kept on this PC only)
+_archive/

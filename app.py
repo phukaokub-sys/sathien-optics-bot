@@ -1,9 +1,14 @@
 import os
 import json
 import re
+import time
+import hmac
+import hashlib
+import secrets
 from functools import wraps
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
+from werkzeug.utils import safe_join
 from flask import Flask, request, abort, render_template, redirect, url_for, jsonify, send_file, session
 
 from linebot.v3 import WebhookHandler
@@ -25,15 +30,49 @@ from linebot.v3.webhooks import (
 )
 
 import database
-from ai_advisor import ask_gemini
 
 # Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.getenv("FLASK_SECRET_KEY", "sathien_secret_key_2026_optics_super_secure")
+
+# Session signing key: never use a value written in the code (anyone who reads the repo
+# could forge an admin login). Prefer FLASK_SECRET_KEY; otherwise derive a stable key from
+# the LINE channel secret, which only lives in .env / Render.
+_flask_secret = os.getenv("FLASK_SECRET_KEY", "").strip()
+if not _flask_secret:
+    _line_secret = os.getenv("LINE_CHANNEL_SECRET", "").strip()
+    if _line_secret:
+        _flask_secret = hashlib.sha256(("sathien-admin-session:" + _line_secret).encode("utf-8")).hexdigest()
+    else:
+        _flask_secret = secrets.token_hex(32)
+        print("[WARN] FLASK_SECRET_KEY not set - admin logins will reset when the server restarts.")
+app.secret_key = _flask_secret
 app.permanent_session_lifetime = timedelta(days=30)
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "sathien2026").strip()
+
+# Admin password: set ADMIN_PASSWORD in Render. The old default is kept only so the shop
+# is never locked out of the dashboard; a warning is printed until it is changed.
+_DEFAULT_ADMIN_PASSWORD = "sathien2026"
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", _DEFAULT_ADMIN_PASSWORD).strip()
+if ADMIN_PASSWORD == _DEFAULT_ADMIN_PASSWORD:
+    print("[WARN] ADMIN_PASSWORD is still the default. Set a new one in Render > Environment.")
+
+# Simple login brute-force protection: 5 wrong passwords from one IP -> locked for 10 minutes.
+_LOGIN_MAX_FAILS = 5
+_LOGIN_LOCK_SECONDS = 10 * 60
+_login_failures = {}  # ip -> [fail_count, first_fail_time]
+
+def _client_ip():
+    forwarded = request.headers.get("X-Forwarded-For", "")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.remote_addr or "unknown"
+
+def _safe_next_url(url):
+    # Only allow redirects back into this site (blocks "open redirect" tricks)
+    if url and url.startswith("/") and not url.startswith("//") and "\\" not in url:
+        return url
+    return "/admin"
 
 def admin_required(f):
     @wraps(f)
@@ -1264,6 +1303,8 @@ def notify_all_admins(alert_text, flex_message=None):
         return 0
 
 
+_admin_request_times = {}  # user_id -> last time they sent #แอดมิน
+
 def get_reply_for_text(user_msg, user_id=""):
     # Record user active state
     if user_id:
@@ -1289,24 +1330,40 @@ def get_reply_for_text(user_msg, user_id=""):
             except Exception:
                 admin_name = "แอดมินร้าน"
 
-        database.register_admin_subscriber(user_id, name=admin_name, role="ผู้ดูแลร้าน")
-        confirm_reply = (
-            f"🎉 ยินดีต้อนรับ '{admin_name}' เข้าสู่ระบบรับแจ้งเตือนร้านเสถียรการแว่นครับ! 👓\n\n"
-            f"🔔 ระบบบันทึกบัญชี LINE ของท่านเรียบร้อยแล้ว\n"
-            f"ตั้งแต่นี้เป็นต้นไป ระบบจะ ยิงข้อความเด้งเข้า LINE นี้ทันที เมื่อ:\n"
-            f"1. 📅 มีลูกค้านัดคิวตรวจวัดสายตาใหม่ (บ้าน/ศูนย์ราชการ)\n"
-            f"2. 📦 มีลูกค้ากรอกที่อยู่จัดส่งแว่นตาใหม่\n"
-            f"3. 📄 มีลูกค้าทักขอสลิปสายตา / ประวัติสายตา\n\n"
-            f"คุณเสถียร คุณนก และทีมงานไม่ต้องคอยเปิดคอมหรือเปิดหน้าเว็บเช็คเลยครับ ระบบจะส่งเตือนพร้อมปุ่มกดโทรหาลูกค้าได้ทันทีครับ! ✨"
+        # SECURITY: typing #แอดมิน no longer makes someone an admin by itself.
+        # Admins receive customers' names, phones and addresses, so only the shop
+        # can approve a new admin (Admin Dashboard > รับแจ้งเตือนแอดมิน).
+        existing = [a for a in database.get_all_admin_subscribers() if a.get("line_user_id") == user_id]
+        if existing and existing[0].get("is_active"):
+            return TextMessage(text=(
+                f"✅ บัญชี LINE นี้เป็นแอดมินรับแจ้งเตือนของร้านเสถียรการแว่นอยู่แล้วครับ ({existing[0].get('name', '')})\n\n"
+                "ระบบจะส่งแจ้งเตือนเข้ามาที่ LINE นี้ทันทีเมื่อมีนัดหมาย ที่อยู่จัดส่ง หรือคำขอสลิปสายตาใหม่ครับ 🔔"
+            ))
+
+        request_alert = (
+            "🔐 มีคำขอเป็นแอดมินรับแจ้งเตือนใหม่\n\n"
+            f"ชื่อที่แจ้ง: {admin_name}\n"
+            f"LINE User ID: {user_id}\n\n"
+            "ถ้าเป็นคนของร้านจริง ให้เข้าหน้า Admin Dashboard > แท็บ 'รับแจ้งเตือนแอดมิน' แล้วเพิ่ม User ID นี้ครับ\n"
+            "ถ้าไม่รู้จัก ไม่ต้องทำอะไรครับ"
         )
-        return TextMessage(text=confirm_reply)
+        last = _admin_request_times.get(user_id, 0)
+        if time.time() - last > 3600:  # max one request alert per person per hour (anti-spam)
+            _admin_request_times[user_id] = time.time()
+            notify_all_admins(alert_text=request_alert)
+        return TextMessage(text=(
+            "📨 ส่งคำขอเป็นแอดมินให้ทางร้านแล้วครับ\n\n"
+            "เพื่อความปลอดภัยของข้อมูลลูกค้า คุณเสถียร / คุณนก จะต้องอนุมัติจากหน้าเว็บแอดมินก่อน "
+            "เมื่ออนุมัติแล้ว ระบบจะส่งข้อความยืนยันมาที่ LINE นี้ครับ 🙏"
+        ))
 
     if msg_clean in ["#ยกเลิกแอดมิน", "#ยกเลิกรับแจ้งเตือน", "#unsubscribe"]:
         admins = database.get_all_admin_subscribers()
         for a in admins:
             if a["line_user_id"] == user_id:
-                database.delete_admin_subscriber(a["id"])
-        return TextMessage(text="🔕 ยกเลิกการรับแจ้งเตือนสำหรับบัญชี LINE นี้เรียบร้อยแล้วครับ หากต้องการเปิดใหม่สามารถพิมพ์ #แอดมิน ได้ทุกเมื่อครับ")
+                # Keep the record (data is never deleted) - just switch alerts off
+                database.toggle_admin_subscriber(a["id"], 0)
+        return TextMessage(text="🔕 ปิดการรับแจ้งเตือนสำหรับบัญชี LINE นี้เรียบร้อยแล้วครับ หากต้องการเปิดใหม่ ให้ทางร้านเปิดให้จากหน้าเว็บแอดมินครับ")
 
     # 1. Check if user typed a phone number (8-10 digits) to track order
     clean_digits = re.sub(r"[^0-9]", "", user_msg)
@@ -1319,21 +1376,30 @@ def get_reply_for_text(user_msg, user_id=""):
         else:
             return TextMessage(text=f"ไม่พบข้อมูลออเดอร์ของเบอร์ {clean_digits} ในระบบครับ\n\nหากคุณลูกค้าสั่งตัดไว้ที่บูทหรือหน้าร้าน สามารถพิมพ์สอบถามแอดมิน หรือโทรติดต่อได้ที่:\n• 085-433-6699 (คุณนก)\n• 092-393-7770 (คุณเสถียร) ได้เลยครับ 👓")
 
-    # 2. Promotion & Packages Inquiry
-    if any(k in msg_lower for k in ["โปร", "promotion", "ราคา", "แพ็กเกจ", "แพคเกจ", "เท่าไหร่", "กี่บาท", "ค่าตัด", "ส่วนลด", "ลดราคา"]):
-        return get_promotion_flex()
+    # 2. Rich-menu buttons and card buttons send these exact texts.
+    #    Only exact commands get an automatic card - normal chat (prices, questions,
+    #    anything else) is left for คุณเสถียร / คุณนก to answer themselves.
+    command = msg_lower.replace(" ", "")
+    MENU_COMMANDS = {
+        "โปรโมชั่น": lambda: get_promotion_flex(),
+        "พิกัดบูทสัปดาห์นี้": lambda: get_booth_location_flex(),
+        "ตารางบูท": lambda: get_booth_location_flex(),
+        "บริการหลังการขาย": lambda: get_service_care_flex(),
+        "ติดตามแว่น/พัสดุ": lambda: get_tracking_flex(user_id=user_id),
+        "ติดตามพัสดุ": lambda: get_tracking_flex(user_id=user_id),
+        "โทรติดต่อร้าน": lambda: get_contact_flex(),
+        "ติดต่อร้าน": lambda: get_contact_flex(),
+        "แผนที่ร้าน": lambda: get_store_location_flex(user_id=user_id),
+        "นัดตรวจสายตา": lambda: get_appointment_flex(user_id=user_id),
+        "จองคิว": lambda: get_appointment_flex(user_id=user_id),
+    }
+    if command in MENU_COMMANDS:
+        return MENU_COMMANDS[command]()
 
-    # 3. Shipping & Delivery Inquiry (ดักคำถามเรื่องการส่งแว่น/พัสดุ ให้ขึ้นเมนูติดตามแว่นตาเสมอ)
-    elif any(k in msg_lower for k in ["ส่งรึยัง", "ส่งหรือยัง", "จัดส่ง", "พัสดุ", "ติดตาม", "ส่งของ", "แว่นเสร็จ", "ถึงไหน", "เช็กพัสดุ", "สถานะ", "เลขพัสดุ", "ที่อยู่", "flash"]):
-        return get_tracking_flex(user_id=user_id)
-
-    # 4. Appointment / Eye Exam Inquiry (ดักคำถามเรื่องการนัดตรวจวัดสายตา)
-    elif any(k in user_msg for k in ["นัด", "จองคิว", "ตรวจวัด", "ตรวจสายตา", "เข้ามาตรวจ", "เปิดกี่โมง", "เปิดวันไหน", "วัดตา", "ตรวจตา", "นัดหมาย", "จองเวลา", "นัดที่บ้าน"]):
-        return get_appointment_flex(user_id=user_id)
-
-    # 5. Prescription Slip Inquiry
-    elif any(k in user_msg for k in ["สลิป", "ใบวัด", "ขอประวัติ", "ค่าสายตา"]):
-        # Instant admin push alert to Khun Nok and Khun Sathien
+    # 3. Prescription slip request: show the customer's saved slips AND alert the shop
+    if command in ["ขอสลิปสายตา", "สลิปสายตา", "ขอใบวัดสายตา"] or (
+        len(msg_clean) <= 40 and any(k in msg_clean for k in ["ขอสลิป", "ขอใบวัด", "ขอค่าสายตา", "ขอประวัติสายตา"])
+    ):
         try:
             user_display_name = ""
             if user_id:
@@ -1349,173 +1415,10 @@ def get_reply_for_text(user_msg, user_id=""):
             )
         except Exception as e:
             print(f"[WARN] Failed to trigger prescription alert to admins: {e}")
-
         return get_prescription_flex(user_id=user_id)
 
-    # 6. Store Location / Maps
-    elif any(k in user_msg for k in ["แผนที่", "อาคาร b", "ศูนย์ราชการ", "พิกัดร้าน", "ร้านหลัก", "ais", "อยู่ตรงไหน", "เดินทาง", "ที่ตั้ง", "บ้าน", "รังสิต", "ติวานนท์", "ปทุมธานี", "the plant", "สาขา", "พิกัด", "ที่อยู่", "หน้าร้าน"]):
-        return get_store_location_flex(user_id=user_id)
-
-    # 7. Booth Schedule
-    elif any(k in user_msg for k in ["บูท", "สัญจร", "ตารางบูท", "พิกัดบูท", "ออกบูท", "ไปงานไหน"]):
-        return get_booth_location_flex()
-
-    # 8. After-Sales Support & Repairs
-    elif any(k in user_msg for k in ["บริการ", "หลังการขาย", "ปัญหา", "ดูแล"]):
-        return get_service_care_flex()
-
-    # 9. Contact Store
-    elif any(k in user_msg for k in ["โทร", "เบอร์", "ติดต่อ", "คุยกับคน", "เบอร์โทร", "ขอเบอร์"]):
-        return get_contact_flex()
-
-    # 10. Smart Optical Knowledge: ทำงานหน้าคอม / จ้องจอนาน / เล่นเกม / ตาล้า / แสงสีฟ้า
-    elif any(k in msg_lower for k in ["หน้าคอม", "ทำงานหน้าจอ", "จ้องจอ", "เล่นเกม", "เกมส์", "เกม", "คอมพิวเตอร์", "มือถือ", "แสงสีฟ้า", "บลู", "blue block", "blue cut", "บลูคัท", "ตาล้า", "แสบตา", "ตาแห้ง", "แพ้แสงหน้าจอ", "ปวดกระบอกตา", "ปวดตา", "ออฟฟิศ", "นั่งโต๊ะ"]):
-        screen_reply = (
-            "💻 สำหรับผู้ที่ 'ทำงานหน้าคอม จ้องจอนาน หรือเล่นเกม' โดยเสถียรการแว่นครับ:\n\n"
-            "✨ แนะนำ: เลนส์กรองแสงสีฟ้า (Blue Block / Blue Control)\n"
-            "• ช่วยตัดคลื่นแสงสีฟ้าพลังงานสูงจากหน้าจอมือถือและจอคอมพิวเตอร์\n"
-            "• ลดอาการตาล้า แสบตา ตาแห้ง และช่วยให้นอนหลับได้สบายขึ้น\n"
-            "• ภาพคมชัดสบายตา สีสันเป็นธรรมชาติ ไม่หลอกตา\n\n"
-            "👓 คำแนะนำในการเลือกกรอบ:\n"
-            "ควรเลือกกรอบแว่นน้ำหนักเบา (เช่น วัสดุ TR90 หรือไทเทเนียม) ที่ไม่บีบขมับและไม่กดแป้นจมูกเวลาใส่ทำงานต่อเนื่องหลายชั่วโมงครับ\n\n"
-            "💡 ทริคดูแลตา (กฎ 20-20-20):\n"
-            "ทุก 20 นาที ให้พักสายตามองไกล 20 ฟุต (6 เมตร) เป็นเวลา 20 วินาที จะช่วยคลายกล้ามเนื้อตาได้ดีมากครับ\n\n"
-            "📍 แวะมาทดลองกรอบและตรวจวัดสายตาฟรีได้ที่:\n"
-            "ศูนย์ราชการ อาคาร B ชั้น 1 (ตรงข้าม AIS)\n"
-            "📞 สอบถามเลนส์และข้อมูล: 085-433-6699 (คุณนก), 092-393-7770 (คุณเสถียร)"
-        )
-        return TextMessage(text=screen_reply)
-
-    # 11. Smart Optical Knowledge: ขับรถ / ขับรถกลางคืน / ออกแดด / ตาแพ้แสง
-    elif any(k in msg_lower for k in ["ขับรถ", "กลางคืน", "แดด", "ออกแดด", "เปลี่ยนสี", "ออโต้", "auto", "กันแดด", "แสงจ้า", "ตาแพ้แสง", "สู้แดดไม่ไหว", "ไฟฟุ้ง", "ไฟแยงตา"]):
-        driving_reply = (
-            "🚗 สำหรับผู้ที่ 'ขับรถเป็นประจำ หรือตาแพ้แสงแดด' โดยเสถียรการแว่นครับ:\n\n"
-            "✨ ขับรถตอนกลางคืน / เจอไฟหน้ารถแยงตา:\n"
-            "• แนะนำ: เลนส์ Multicoat สารเคลือบตัดแสงสะท้อนรอบทิศทาง ช่วยลดแสงฟุ้งกระจายจากไฟหน้ารถและป้ายไฟ ทำให้มองทางคมชัดและปลอดภัยยิ่งขึ้น\n\n"
-            "☀️ ขับรถกลางวัน / ออกแดดกลางแจ้ง:\n"
-            "• แนะนำ: เลนส์ Auto Photochromic (ออกแดดเปลี่ยนสีอัจฉริยะ)\n"
-            "  - อยู่ในร่มหรือในรถ: เลนส์ใส สบายตา\n"
-            "  - ออกแดดกลางแจ้ง: เลนส์จะปรับเฉดสีเข้มขึ้นเป็นแว่นกันแดดอัตโนมัติ ป้องกันรังสี UV ได้ 100%\n\n"
-            "📍 แวะเข้ามาตรวจเช็คค่าสายตาละเอียดได้ฟรีที่:\n"
-            "ศูนย์ราชการ อาคาร B ชั้น 1 (ตรงข้าม AIS)\n"
-            "📞 โทรปรึกษาคุณนก: 085-433-6699 หรือคุณเสถียร: 092-393-7770 ครับ"
-        )
-        return TextMessage(text=driving_reply)
-
-    # 12. Smart Optical Knowledge: มองใกล้ไม่ชัด / วัย 40+ / อ่านหนังสือ / โปรเกรสซีฟ
-    elif any(k in msg_lower for k in ["โปรเกรสซีฟ", "progressive", "สองชั้น", "มองใกล้", "มองไกล", "อ่านหนังสือ", "ยื่นแขน", "อายุ 40", "สายตายาว", "ยาวตามวัย", "ผู้สูงอายุ", "พ่อแม่", "วัยเกษียณ", "สลับแว่น", "ถอดแว่นอ่านหนังสือ"]):
-        progressive_reply = (
-            "👓 สำหรับผู้ที่มีอาการ 'เริ่มมองใกล้ไม่ชัด หรือวัย 40+' โดยเสถียรการแว่นครับ:\n\n"
-            "ภาวะนี้เรียกว่า 'สายตายาวตามวัย' เกิดจากกล้ามเนื้อตาปรับโฟกัสใกล้ช้าลงตามธรรมชาติครับ:\n\n"
-            "👑 เลนส์โปรเกรสซีฟ (Progressive Lens) - มองชัดครบทุกระยะ ไร้รอยต่อ:\n"
-            "• มองไกล (ขับรถ/ดูทีวี) - ระยะกลาง (จอคอมพิวเตอร์) - ระยะใกล้ (อ่านหนังสือ/มือถือ) ได้ในแว่นตัวเดียว\n"
-            "• เลนส์ใสเรียบเนียน ไร้รอยต่อ มองดูอ่อนกว่าวัยเหมือนแว่นสายตาทั่วไป ไม่ต้องคอยสลับแว่นหรือถอดแว่นเข้า-ออก\n\n"
-            "✨ การตัดเลนส์โปรเกรสซีฟต้องอาศัยความชำนาญสูงมาก โดยที่ร้านจะได้รับการตรวจวัดและหาจุดกึ่งกลางตาดำ (PD) อย่างละเอียดโดย 'คุณเสถียร' ช่างผู้เชี่ยวชาญกว่า 30 ปีครับ\n\n"
-            "📍 หน้าร้าน: ศูนย์ราชการ อาคาร B ชั้น 1 (ตรงข้าม AIS)\n"
-            "📞 ปรึกษาคุณเสถียรโดยตรง: 092-393-7770, คุณนก: 085-433-6699"
-        )
-        return TextMessage(text=progressive_reply)
-
-    # 13. Smart Optical Knowledge: สายตาสั้น / ยาว / เอียง ต่างกันอย่างไร
-    elif any(k in msg_lower for k in ["สายตาสั้น", "สายตายาว", "สายตาเอียง", "เอียงคือ", "สั้นคือ", "เงาซ้อน", "มองไม่ชัด", "ภาพเบลอ", "ตาเอียง", "ภาพซ้อน"]):
-        refraction_reply = (
-            "🔍 ความแตกต่างของปัญหาสายตา โดยเสถียรการแว่นครับ:\n\n"
-            "• สายตาสั้น (Myopia): มองวัตถุระยะไกลเบลอแต่มองใกล้ชัด มักเกิดจากกระบอกตายาวกว่าปกติ\n\n"
-            "• สายตายาว (Hyperopia): กระบอกตาสั้น ทำให้ต้องเพ่งมองทั้งระยะใกล้และไกลจนเกิดอาการตาล้า\n\n"
-            "• สายตาเอียง (Astigmatism): กระจกตามีความโค้งไม่เท่ากันในแต่ละแนว ทำให้จุดโฟกัสตกไม่พร้อมกัน มองเห็นเป็น 'เงาซ้อน หรือแสงไฟฟุ้งกระจาย' โดยเฉพาะเวลากลางคืน\n\n"
-            "💡 อาการสายตาเอียงจำเป็นต้องตรวจวัดหา 'องศาเอียง (Axis)' ที่แม่นยำ เพื่อตัดแว่นแล้วใส่สบายตา ไม่เวียนหัวครับ\n\n"
-            "📍 แวะมาตรวจวัดสายตาฟรีด้วยระบบคอมพิวเตอร์ได้ที่:\n"
-            "ศูนย์ราชการ อาคาร B ชั้น 1 (ตรงข้าม AIS)\n"
-            "📞 085-433-6699 (คุณนก), 092-393-7770 (คุณเสถียร)"
-        )
-        return TextMessage(text=refraction_reply)
-
-    # 14. Smart Optical Knowledge: เลือกกรอบแว่นให้เข้ากับรูปหน้า
-    elif any(k in msg_lower for k in ["เลือกกรอบ", "ทรงแว่น", "กรอบแว่น", "รูปหน้า", "หน้ากลม", "หน้าเหลี่ยม", "หน้ารูปไข่", "หน้ายาว", "กรอบแบบไหน", "เข้ากับหน้า", "กรอบหน้า"]):
-        frame_reply = (
-            "🎨 เทคนิคการเลือกกรอบแว่นให้เข้ากับรูปหน้า โดยเสถียรการแว่นครับ:\n\n"
-            "• หน้ากลม: เหมาะกับกรอบทรงเหลี่ยม (Square / Wayfarer) หรือทรงหยดน้ำที่มีเหลี่ยมมุม เพื่อช่วยดึงให้ใบหน้าดูเรียวยาวขึ้น\n\n"
-            "• หน้าเหลี่ยม: เหมาะกับกรอบทรงมน ทรงกลม หรือทรงหยดน้ำ ช่วยลดความคมของแนวกราม ให้หน้าดูนุ่มนวลขึ้น\n\n"
-            "• หน้ารูปไข่: โชคดีมากครับ! สามารถใส่กรอบได้สวยแทบทุกทรง ทั้งทรงกลม เหลี่ยม และแคทอาย\n\n"
-            "✨ คำแนะนำเรื่องวัสดุ: แนะนำกรอบ TR90 หรือไทเทเนียม น้ำหนักเบา ยืดหยุ่น ทนทาน ไม่กดดั้งจมูก\n\n"
-            "📍 ทางร้านเสถียรการแว่นมีกรอบให้ลองสวมเทียบใบหน้าจริงมากกว่า 500 แบบ แวะมาลองสวมได้ที่ ศูนย์ราชการ อาคาร B ชั้น 1 ได้เลยครับ 😊"
-        )
-        return TextMessage(text=frame_reply)
-
-    # 15. Smart Optical Knowledge: แว่นหลวม / ขาแว่นเอียง / แป้นจมูก / การดูแลรักษาแว่น
-    elif any(k in msg_lower for k in ["แว่นหลวม", "แว่นเอียง", "แป้นจมูก", "ดัดแว่น", "ดัดทรง", "ซ่อมแว่น", "น็อตหลุด", "แว่นบีบ", "เจ็บดั้ง", "ล้างแว่น", "ทำความสะอาดแว่น", "เช็ดแว่น"]):
-        care_reply = (
-            "🛠️ การดูแลรักษาและปรับแต่งแว่นตา โดยเสถียรการแว่นครับ:\n\n"
-            "• แว่นหลวม ไหลลงมาที่จมูก หรือขาแว่นเอียงข้างสูงต่ำไม่เท่ากัน: แวะนำแว่นเข้ามาให้ 'คุณเสถียร' ดัดปรับทรงและปรับแป้นจมูกให้กระชับใบหน้าได้ ฟรีตลอดชีพ ครับ!\n\n"
-            "• แป้นจมูกเหลืองหรือกดทับดั้ง: ทางร้านมีบริการเปลี่ยนแป้นจมูกซิลิโคนนุ่มให้ฟรีครับ\n\n"
-            "🧼 วิธีล้างทำความสะอาดเลนส์ที่ถูกต้อง:\n"
-            "1. ใช้น้ำเปล่าไหลผ่านตัวแว่น\n"
-            "2. ใช้น้ำยาล้างจานเจือจางลูบเบาๆ (ห้ามใช้สบู่หรือแอลกอฮอล์ เพราะจะกัดสารเคลือบเลนส์)\n"
-            "3. ล้างน้ำให้สะอาด แล้วซับด้วยกระดาษทิชชูไร้ขนหรือผ้าไมโครไฟเบอร์\n\n"
-            "📍 หน้าร้าน: ศูนย์ราชการ อาคาร B ชั้น 1 (ตรงข้าม AIS)\n"
-            "📞 โทรหาคุณเสถียรได้เลยครับ: 092-393-7770"
-        )
-        return TextMessage(text=care_reply)
-
-    # 16. Smart Optical Knowledge: ตัดแว่นใช้เวลากี่วัน / รอรับได้เลยไหม
-    elif any(k in msg_lower for k in ["กี่วัน", "รอรับ", "รับแว่น", "ใช้เวลา", "ตัดนานไหม", "เสร็จกี่วัน", "วันเดียวได้ไหม", "รอรับได้ไหม"]):
-        duration_reply = (
-            "⏰ ระยะเวลาในการประกอบแว่นตา เสถียรการแว่นครับ:\n\n"
-            "• เลนส์สายตาทั่วไป / เลนส์บลูคัทมาตรฐาน: หากมีค่าสายตาในสต็อก สามารถรอรับได้เลยภายใน 20 - 30 นาที หรือฝากส่ง Flash ถึงบ้านฟรีครับ\n\n"
-            "• เลนส์สั่งผลิตพิเศษ / เลนส์โปรเกรสซีฟ: สั่งผลิตจากแล็บมาตรฐาน ใช้เวลาประมาณ 3 - 5 วันทำการ เพื่อความคมชัดและแม่นยำสูงสุดครับ\n\n"
-            "✨ เมื่อแว่นตาตัดประกอบเสร็จแล้ว ทางร้านจะส่งข้อความแจ้งเตือนผ่าน LINE ให้ทราบทันทีครับ 👓\n\n"
-            "📞 สอบถามสต็อกเลนส์: 085-433-6699 (คุณนก), 092-393-7770 (คุณเสถียร)"
-        )
-        return TextMessage(text=duration_reply)
-
-    # 17. Smart Optical Knowledge: เด็กและวัยเรียน สายตาสั้นเร็ว
-    elif any(k in msg_lower for k in ["เด็ก", "ลูก", "วัยรุ่น", "นักเรียน", "สั้นเร็ว", "ถนอมสายตาเด็ก", "ลูกสายตาสั้น"]):
-        kids_reply = (
-            "👧 คำแนะนำการดูแลสายตาเด็กและวัยเรียน โดยเสถียรการแว่นครับ:\n\n"
-            "• เด็กวัยเรียนกระบอกตากำลังเจริญเติบโต แนะนำให้ตรวจวัดสายตาทุก 6 เดือน เพื่อเช็คว่าค่าสายตาเปลี่ยนหรือไม่\n"
-            "• หากเล่นแท็บเล็ตหรือเรียนออนไลน์ ควรใช้เลนส์กรองแสงสีฟ้าเพื่อป้องกันอาการตาล้า\n"
-            "• ควรเลือกกรอบแว่นซิลิโคนหรือ TR90 ที่ยืดหยุ่นสูง ตกไม่แตก ปลอดภัยสำหรับเด็ก\n"
-            "• ส่งเสริมให้เด็กทำกิจกรรมกลางแจ้งรับแสงธรรมชาติวันละ 1-2 ชั่วโมง ช่วยชะลอสายตาสั้นได้ดีมากครับ\n\n"
-            "📍 พาคุณน้องๆ หนูๆ มาตรวจวัดสายตาฟรีได้ที่ ศูนย์ราชการ อาคาร B ชั้น 1 (ตรงข้าม AIS) ได้เลยครับ 😊"
-        )
-        return TextMessage(text=kids_reply)
-
-    # 18. Smart Greeting & Welcome (คำทักทาย)
-    elif any(k in msg_lower for k in ["สวัสดี", "หวัดดี", "hello", "hi", "ดีครับ", "ดีค่ะ", "สอบถาม"]):
-        greeting_reply = (
-            "สวัสดีครับ! ยินดีต้อนรับสู่ 'ร้านแว่นตา เสถียรการแว่น' ครับ 😊👓\n\n"
-            "ทางร้านยินดีให้คำปรึกษาเรื่องสายตา เลนส์ และการเลือกกรอบแว่นทุกชนิดครับ\n\n"
-            "🏢 สาขา 1: ศูนย์ราชการเฉลิมพระเกียรติฯ แจ้งวัฒนะ อาคาร B ชั้น 1 (ตรงข้าม AIS)\n"
-            "⏰ เปิดทำการ: จันทร์ - ศุกร์ ตามเวลาราชการ (08:30 - 15:00 น.)\n\n"
-            "🏡 สาขา 2: สตูดิโอส่วนตัวที่บ้าน (The Plant-Light ติวานนท์-รังสิต ปทุมธานี)\n"
-            "✨ ตรวจวัดสายตาละเอียดแบบ Private VIP (เปิดทุกวัน รวม ส.-อา. นัดล่วงหน้า)\n\n"
-            "คุณลูกค้าสามารถแตะเมนูด้านล่าง หรือพิมพ์สอบถามเรื่องสายตาได้เลยครับ:\n"
-            "• เช่น 'ทำงานหน้าคอมควรใส่แว่นแบบไหน'\n"
-            "• 'ขับรถกลางคืนแสงไฟฟุ้ง'\n"
-            "• 'มองใกล้ไม่ชัดต้องยื่นแขน'\n"
-            "• 'ขอแผนที่ร้าน' หรือ 'จองคิวนัดตรวจ'\n\n"
-            "📞 โทรติดต่อด่วน: 085-433-6699 (คุณนก), 092-393-7770 (คุณเสถียร) ได้ตลอดเวลาครับ!"
-        )
-        return TextMessage(text=greeting_reply)
-
-    # 19. AI Consultation fallback via Gemini (พร้อมป้ายกำกับข้อความอัตโนมัติ)
-    ai_answer = ask_gemini(user_msg)
-    if ai_answer:
-        ai_disclaimer = (
-            "\n\n───────────────\n"
-            "🤖 [ข้อความตอบกลับอัตโนมัติโดย AI ผู้ช่วยร้านเสถียรการแว่น]\n"
-            "(ไม่ใช่ข้อความจากเจ้าของร้านโดยตรง หากต้องการติดต่อเจ้าหน้าที่ โทร: 085-433-6699, 092-393-7770)"
-        )
-        return TextMessage(text=f"{ai_answer}{ai_disclaimer}")
-
-    # 20. General fallback
-    fallback_text = (
-        f"ขอบคุณสำหรับข้อความครับ แอดมินร้านเสถียรการแว่นได้รับข้อความแล้ว จะรีบมาตอบกลับนะครับ 👓\n\n"
-        f"หากมีเรื่องเร่งด่วน หรือต้องการสอบถามพิกัด สามารถโทรได้ที่:\n"
-        f"• 085-433-6699 (คุณนก)\n"
-        f"• 092-393-7770 (คุณเสถียร)"
-    )
-    return TextMessage(text=fallback_text)
+    # 4. Everything else: no automatic reply. The shop answers personally in LINE OA.
+    return None
 
 # ==========================================
 # WEB & API ROUTES
@@ -1543,8 +1446,7 @@ def submit_address():
     details = data.get("order_details", "").strip()
     user_id = data.get("userId", "").strip()
 
-    if not user_id:
-        user_id = database.get_latest_line_user()
+    # PRIVACY: no guessing the customer from "latest LINE user" (sent data to the wrong person)
 
     if not name or not phone or not addr:
         return jsonify({"status": "error", "message": "กรุณากรอกข้อมูลให้ครบถ้วน"}), 400
@@ -1604,8 +1506,7 @@ def submit_booking():
     notes = data.get("notes", "").strip()
     user_id = data.get("userId", "").strip()
 
-    if not user_id:
-        user_id = database.get_latest_line_user()
+    # PRIVACY: no guessing the customer from "latest LINE user" (sent data to the wrong person)
 
     if not name or not phone or not b_date:
         return jsonify({"status": "error", "message": "กรุณากรอกข้อมูลให้ครบถ้วน"}), 400
@@ -1666,14 +1567,30 @@ def submit_booking():
 def admin_login():
     error = None
     if request.method == "POST":
+        ip = _client_ip()
+        now = time.time()
+        fails = _login_failures.get(ip)
+        if fails and now - fails[1] > _LOGIN_LOCK_SECONDS:
+            _login_failures.pop(ip, None)
+            fails = None
+        if fails and fails[0] >= _LOGIN_MAX_FAILS:
+            wait_min = int((_LOGIN_LOCK_SECONDS - (now - fails[1])) // 60) + 1
+            error = f"ใส่รหัสผิดหลายครั้งเกินไป กรุณารอประมาณ {wait_min} นาทีแล้วลองใหม่ครับ"
+            return render_template("admin_login.html", error=error), 429
+
         pwd = request.form.get("password", "").strip()
         expected = os.getenv("ADMIN_PASSWORD", ADMIN_PASSWORD).strip()
-        if pwd and pwd == expected:
+        if pwd and hmac.compare_digest(pwd.encode("utf-8"), expected.encode("utf-8")):
+            _login_failures.pop(ip, None)
+            session.clear()
             session["admin_logged_in"] = True
             session.permanent = True
-            next_url = request.args.get("next") or "/admin"
-            return redirect(next_url)
+            return redirect(_safe_next_url(request.args.get("next")))
         else:
+            if fails:
+                fails[0] += 1
+            else:
+                _login_failures[ip] = [1, now]
             error = "รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้งครับ"
     return render_template("admin_login.html", error=error)
 
@@ -1809,9 +1726,11 @@ def add_prescription_route():
     image_url = ""
     slip_file = request.files.get("slip_image")
     if slip_file and slip_file.filename:
-        ext = os.path.splitext(slip_file.filename)[1].lower() or ".jpg"
-        clean_p = phone[-4:] if len(phone) >= 4 else "rx"
-        safe_name = f"slip_{int(time.time())}_{clean_p}{ext}"
+        ext = os.path.splitext(slip_file.filename)[1].lower()
+        if ext not in [".jpg", ".jpeg", ".png", ".webp", ".heic"]:
+            ext = ".jpg"
+        # Random part makes the link impossible to guess (slips are private medical data)
+        safe_name = f"slip_{int(time.time())}_{secrets.token_urlsafe(12)}{ext}"
         filepath = os.path.join(UPLOAD_FOLDER, safe_name)
         slip_file.save(filepath)
         image_url = f"{BASE_URL}/static/prescriptions/{safe_name}"
@@ -1920,14 +1839,7 @@ def update_order():
         target_user_id = ""
         if order and order["line_user_id"]:
             target_user_id = order["line_user_id"]
-        else:
-            target_user_id = database.get_latest_line_user()
-            if target_user_id:
-                # Update back to order
-                conn = database.get_db()
-                conn.execute("UPDATE orders SET line_user_id = ? WHERE id = ?", (target_user_id, order_id))
-                conn.commit()
-                conn.close()
+        # PRIVACY: if the order has no LINE account linked, do not message a random customer.
 
         # Send push notification to customer
         if target_user_id:
@@ -1998,7 +1910,9 @@ def logo_image():
 
 @app.route("/static/promotions/<path:filename>", methods=["GET"])
 def serve_promotions_file(filename):
-    filepath = os.path.join(PROMOTIONS_FOLDER, filename)
+    filepath = safe_join(PROMOTIONS_FOLDER, filename)
+    if not filepath:
+        abort(404)
     if not os.path.exists(filepath):
         # Auto-restore missing promo image from GitHub db-storage cloud
         cloud_path = f"uploads/promotions/{filename}"
@@ -2013,7 +1927,9 @@ def serve_promotions_file(filename):
 
 @app.route("/static/prescriptions/<path:filename>", methods=["GET"])
 def serve_prescriptions_file(filename):
-    filepath = os.path.join(UPLOAD_FOLDER, filename)
+    filepath = safe_join(UPLOAD_FOLDER, filename)
+    if not filepath:
+        abort(404)
     if not os.path.exists(filepath):
         # Auto-restore missing prescription slip from GitHub db-storage cloud
         cloud_path = f"uploads/prescriptions/{filename}"
@@ -2044,47 +1960,12 @@ def callback():
     try:
         handler.handle(body, signature)
     except InvalidSignatureError:
-        print("[WARN] InvalidSignatureError. Attempting fallback event processing...")
-        try:
-            data = json.loads(body)
-            messaging_api = get_messaging_api()
-            for ev in data.get("events", []):
-                reply_token = ev.get("replyToken")
-                user_id = ev.get("source", {}).get("userId", "")
-                if user_id:
-                    database.record_line_user(user_id)
-                if not reply_token:
-                    continue
-                try:
-                    if ev.get("type") == "message" and ev.get("message", {}).get("type") == "text":
-                        text = ev.get("message", {}).get("text", "")
-                        reply_msg = get_reply_for_text(text, user_id)
-                        messaging_api.reply_message(
-                            ReplyMessageRequest(
-                                reply_token=reply_token,
-                                messages=[reply_msg]
-                            )
-                        )
-                    elif ev.get("type") == "follow":
-                        welcome_text = (
-                            "ยินดีต้อนรับสู่ เสถียรการแว่น ครับ! 👓\n\n"
-                            "ขอบคุณที่แวะมาพบกันนะครับ ไม่ว่าจะพบกันที่บูท หรือที่หน้าร้านประจำ\n\n"
-                            "คุณลูกค้าสามารถแตะที่เมนูด้านล่างเพื่อ:\n"
-                            "• ดูแผนที่ร้านประจำ (ศูนย์ราชการ อาคาร B)\n"
-                            "• สอบถามพิกัดออกบูทของคุณพ่อ\n"
-                            "• ติดตามแว่นและพัสดุ\n"
-                            "• รับบริการดูแลแว่นตา ล้าง ดัดทรง เปลี่ยนแป้นจมูกฟรีตลอดชีพครับ!"
-                        )
-                        messaging_api.reply_message(
-                            ReplyMessageRequest(
-                                reply_token=reply_token,
-                                messages=[TextMessage(text=welcome_text)]
-                            )
-                        )
-                except Exception as api_err:
-                    print(f"[WARN] Error calling LINE Reply API: {api_err}")
-        except Exception as err:
-            print(f"[ERROR] Fallback parsing failed: {err}")
+        # SECURITY: a request without a valid LINE signature did not come from LINE.
+        # Previously these were still processed, so anyone on the internet could fake
+        # customer messages. If real messages ever show this warning in the Render logs,
+        # LINE_CHANNEL_SECRET in Render is wrong - fix it there.
+        print("[WARN] Rejected webhook with invalid LINE signature (check LINE_CHANNEL_SECRET if this repeats).")
+        abort(400)
     except Exception as e:
         print(f"[ERROR] General exception: {e}")
 
@@ -2119,6 +2000,8 @@ def handle_message(event):
         database.record_line_user(user_id)
     user_msg = event.message.text.strip()
     msg = get_reply_for_text(user_msg, user_id)
+    if msg is None:
+        return  # left for the shop to answer personally
     messaging_api.reply_message(
         ReplyMessageRequest(
             reply_token=event.reply_token,

@@ -1,235 +1,196 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>นัดคิวตรวจวัดสายตา - เสถียรการแว่น</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Prompt', sans-serif; }
-        .location-card {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .location-card:hover {
-            transform: translateY(-2px);
-        }
-        .optical-bg {
-            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s ease;
-        }
-        .location-card:hover .optical-bg {
-            transform: scale(1.08);
-            opacity: 0.24;
-        }
-    </style>
+  {% include "_shop_head.html" %}
+  <title>ขอนัดตรวจวัดสายตา - เสถียรการแว่น</title>
 </head>
-<body class="bg-gradient-to-br from-slate-100 via-indigo-50/30 to-slate-100 min-h-screen py-8 px-4 flex items-center justify-center">
-    <div class="max-w-md w-full mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200/80">
-        <!-- Header with Subtle Optical Clinic Background -->
-        <div class="relative overflow-hidden p-7 text-white text-center">
-            <!-- Subtle optical background layer (Khun Sathien Eye Examination) -->
-            <div class="absolute inset-0 bg-cover bg-center opacity-20 pointer-events-none filter blur-[0.3px]" 
-                 style="background-image: url('/static/images/bg_clinic_exam.jpg');"></div>
-            <!-- Gradient overlay mask for crisp readability -->
-            <div class="absolute inset-0 bg-gradient-to-b from-indigo-950/95 via-indigo-900/90 to-slate-950/95 pointer-events-none"></div>
+<body>
+<main class="page">
+  {% include "_shop_brand.html" %}
 
-            <div class="relative z-10 flex flex-col items-center">
-                <span class="text-3xl filter drop-shadow">👓</span>
-                <h1 class="text-xl font-bold mt-2 tracking-wide text-white drop-shadow">เสถียรการแว่น</h1>
-                <p class="text-xs text-indigo-200 mt-1 font-light">แบบฟอร์มนัดหมายตรวจวัดสายตาละเอียด & บริการส่วนตัว</p>
-                <div class="h-1 w-20 bg-gradient-to-r from-amber-400 via-yellow-200 to-amber-500 rounded-full mx-auto mt-3"></div>
-            </div>
+  <section id="formView">
+    <h2 class="page-title">ขอนัดตรวจวัดสายตา</h2>
+    <p class="page-lead">กรอกวันและช่วงเวลาที่สะดวก แล้วคุณเสถียรหรือคุณนกจะโทรกลับไปยืนยันเวลาอีกครั้ง</p>
+
+    <div id="formError" class="notice notice-err form-error" role="alert"></div>
+
+    <form id="bookingForm" novalidate>
+      <input type="hidden" id="userId" value="">
+
+      <div class="field">
+        <label class="label" for="customer_name">ชื่อผู้ตรวจ</label>
+        <input class="input" type="text" id="customer_name" autocomplete="name" required placeholder="เช่น สมชาย ใจดี">
+      </div>
+
+      <div class="field">
+        <label class="label" for="phone">เบอร์โทรศัพท์</label>
+        <input class="input" type="tel" id="phone" inputmode="tel" autocomplete="tel" required placeholder="เช่น 0812345678">
+        <p class="hint">ร้านจะโทรเบอร์นี้เพื่อยืนยันนัด</p>
+      </div>
+
+      <fieldset class="field" style="border:0;padding:0;margin:0 0 18px;">
+        <legend class="label">สถานที่</legend>
+        <div class="choices">
+          <label class="choice">
+            <input type="radio" name="preferred_location" value="สตูดิโอที่บ้าน (The Plant-Light ติวานนท์-รังสิต ปทุมธานี)" checked>
+            <span>
+              <span class="choice-name">สตูดิโอที่บ้าน ติวานนท์-รังสิต</span>
+              <span class="choice-detail">หมู่บ้าน The Plant-Light เลขที่ 99/263 อ.เมือง จ.ปทุมธานี มีที่จอดรถ</span>
+              <span class="choice-hours">เปิดทุกวัน รวมเสาร์-อาทิตย์และช่วงเย็น</span>
+            </span>
+          </label>
+          <label class="choice">
+            <input type="radio" name="preferred_location" value="ศูนย์ราชการเฉลิมพระเกียรติฯ อาคาร B (แจ้งวัฒนะ)">
+            <span>
+              <span class="choice-name">ศูนย์ราชการ แจ้งวัฒนะ อาคาร B</span>
+              <span class="choice-detail">ชั้น 1 โซน Million Mall ตรงข้าม AIS</span>
+              <span class="choice-hours">จันทร์-ศุกร์ 08:30-15:00 น.</span>
+            </span>
+          </label>
         </div>
+      </fieldset>
 
-        <!-- Form -->
-        <form id="bookingForm" class="p-6 space-y-4">
-            <input type="hidden" id="userId" name="userId" value="">
-
-            <div>
-                <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">ชื่อ - นามสกุล ของผู้ตรวจ *</label>
-                <input type="text" id="customer_name" required placeholder="เช่น คุณสมชาย หรือ ครอบครัวใจดี" 
-                       class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 text-sm transition">
-            </div>
-
-            <div>
-                <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">เบอร์โทรศัพท์ติดต่อสะดวก *</label>
-                <input type="tel" id="phone" required placeholder="เช่น 0812345678" 
-                       class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 text-sm transition">
-            </div>
-
-            <div>
-                <label class="block text-xs font-semibold text-slate-700 uppercase mb-1.5">สถานที่ที่สะดวกเข้ารับบริการ *</label>
-                <div class="space-y-2.5">
-                    <!-- Location Card 1: สตูดิโอที่บ้าน The Plant-Light -->
-                    <label class="location-card relative block overflow-hidden rounded-2xl border-2 border-indigo-300 bg-white cursor-pointer group shadow-sm hover:border-indigo-600 hover:shadow-md">
-                        <!-- Subtle Background Layer (Private Clinic Studio) -->
-                        <div class="optical-bg absolute inset-0 bg-cover bg-center opacity-15 pointer-events-none" 
-                             style="background-image: url('/static/images/bg_clinic_exam.jpg');"></div>
-                        <!-- Gradient Overlay Mask -->
-                        <div class="absolute inset-0 bg-gradient-to-r from-white/95 via-indigo-50/90 to-white/90 pointer-events-none"></div>
-
-                        <div class="relative z-10 flex items-start gap-3 p-3.5">
-                            <input type="radio" name="preferred_location" value="สตูดิโอที่บ้าน (The Plant-Light ติวานนท์-รังสิต ปทุมธานี)" checked class="mt-1 text-indigo-600 focus:ring-indigo-500">
-                            <div class="text-xs space-y-1">
-                                <div class="flex items-center gap-2">
-                                    <span class="font-bold text-indigo-950 text-sm">🏡 สตูดิโอที่บ้าน (Private VIP)</span>
-                                    <span class="text-[10px] bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full font-bold">แนะนำ</span>
-                                </div>
-                                <span class="text-slate-600 block">The Plant-Light ติวานนท์-รังสิต บ้านเลขที่ 99/263 อ.เมือง จ.ปทุมธานี</span>
-                                <span class="text-indigo-700 font-semibold block text-[11px]">✨ ตรวจละเอียด 1:1 เป็นส่วนตัว ที่จอดรถสะดวก เปิดบริการทุกวัน</span>
-                            </div>
-                        </div>
-                    </label>
-
-                    <!-- Location Card 2: ศูนย์ราชการเฉลิมพระเกียรติฯ อาคาร B -->
-                    <label class="location-card relative block overflow-hidden rounded-2xl border border-slate-200 bg-white cursor-pointer group shadow-sm hover:border-emerald-500 hover:shadow-md">
-                        <!-- Subtle Background Layer (HOYA Display Stand) -->
-                        <div class="optical-bg absolute inset-0 bg-cover bg-center opacity-12 pointer-events-none" 
-                             style="background-image: url('/static/images/bg_hoya_blue.jpg');"></div>
-                        <!-- Gradient Overlay Mask -->
-                        <div class="absolute inset-0 bg-gradient-to-r from-white/95 via-emerald-50/90 to-white/90 pointer-events-none"></div>
-
-                        <div class="relative z-10 flex items-start gap-3 p-3.5">
-                            <input type="radio" name="preferred_location" value="ศูนย์ราชการเฉลิมพระเกียรติฯ อาคาร B (แจ้งวัฒนะ)" class="mt-1 text-emerald-600 focus:ring-emerald-500">
-                            <div class="text-xs space-y-1">
-                                <span class="font-bold text-slate-900 text-sm block">🏢 ศูนย์ราชการ อาคาร B (ร้านประจำ)</span>
-                                <span class="text-slate-600 block">ชั้นล่าง ตรงข้าม AIS ถ.แจ้งวัฒนะ (เปิด จ.-ศ. 08:30 - 15:00 น.)</span>
-                                <span class="text-emerald-700 font-medium block text-[11px]">สะดวกรวดเร็ว รอรับแว่นได้ในวันเวลาราชการ</span>
-                            </div>
-                        </div>
-                    </label>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-3">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">วันที่สะดวก *</label>
-                    <input type="date" id="booking_date" required 
-                           class="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 text-xs">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">ช่วงเวลาที่สะดวก *</label>
-                    <select id="booking_time" required class="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 text-xs bg-white">
-                        <option value="ช่วงเช้า (09:00 - 12:00 น.)">เช้า (09:00 - 12:00)</option>
-                        <option value="ช่วงบ่าย (13:00 - 15:00 น.)" selected>บ่าย (13:00 - 15:00)</option>
-                        <option value="ช่วงเย็น (16:30 - 19:00 น.)">เย็น (16:30 - 19:00)</option>
-                        <option value="ช่วงค่ำ (หลัง 19:00 น.)">ค่ำ (หลัง 19:00)</option>
-                    </select>
-                </div>
-            </div>
-
-            <div>
-                <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">บริการที่สนใจ / ปัญหาสายตา</label>
-                <select id="service_type" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 text-xs bg-white">
-                    <option value="ตรวจวัดสายตาประกอบแว่นทั่วไป">ตรวจวัดสายตาประกอบแว่นทั่วไป</option>
-                    <option value="ปรึกษาและตรวจวัดเลนส์โปรเกรสซีฟ (Progressive)">👑 ปรึกษาเลนส์โปรเกรสซีฟ (Progressive มองใกล้-ไกล)</option>
-                    <option value="พาครอบครัว / ผู้สูงอายุมาตรวจสายตา">👨‍👩‍👧 พาครอบครัว / คุณพ่อคุณแม่มาตรวจ</option>
-                    <option value="ตัดแว่นกรองแสงคอมพิวเตอร์ / เล่นเกม">💻 เลนส์กรองแสงสีฟ้า (ทำงานหน้าคอม/เล่นเกม)</option>
-                    <option value="ดัดทรงแว่นตา / เปลี่ยนแป้นจมูก / ล้างแว่นฟรี">🛠️ นำแว่นมาปรับทรง / ดัดแว่น / บริการหลังการขาย</option>
-                </select>
-            </div>
-
-            <div>
-                <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">หมายเหตุเพิ่มเติม (ถ้ามี)</label>
-                <textarea id="notes" rows="2" placeholder="เช่น จำนวนคนที่มาตรวจพร้อมกัน หรืออาการสายตาเบื้องต้น" 
-                          class="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 text-xs"></textarea>
-            </div>
-
-            <div class="pt-2">
-                <button type="submit" id="btnSubmit" 
-                        class="w-full bg-gradient-to-r from-indigo-700 via-indigo-800 to-indigo-900 hover:from-indigo-800 hover:to-indigo-950 text-white font-bold py-3.5 rounded-2xl shadow-lg shadow-indigo-700/25 transition-all duration-200 transform active:scale-98 flex justify-center items-center gap-2 cursor-pointer">
-                    <span>ยืนยันการนัดหมาย</span>
-                    <span>➔</span>
-                </button>
-            </div>
-        </form>
-
-        <!-- Success Modal/Card (Hidden by default) -->
-        <div id="successCard" class="hidden relative overflow-hidden p-8 text-center space-y-4">
-            <!-- Subtle optical background layer -->
-            <div class="absolute inset-0 bg-cover bg-center opacity-10 pointer-events-none" 
-                 style="background-image: url('/static/images/bg_manee_frames.jpg');"></div>
-            <div class="absolute inset-0 bg-gradient-to-b from-white/95 via-white/90 to-emerald-50/80 pointer-events-none"></div>
-
-            <div class="relative z-10 w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-3xl shadow-sm ring-4 ring-emerald-50">
-                ✓
-            </div>
-            <h2 class="relative z-10 text-xl font-bold text-slate-800">ส่งข้อมูลนัดหมายสำเร็จ</h2>
-            <p class="relative z-10 text-sm text-slate-600 leading-relaxed">
-                ทางร้านเสถียรการแว่นได้รับข้อมูลการนัดหมายของคุณแล้วครับ คุณเสถียรหรือคุณนกจะโทรยืนยันเวลาเพื่อเตรียมการต้อนรับอย่างดีที่สุดครับ 👓
-            </p>
-            <div class="relative z-10 p-4 bg-slate-50/90 backdrop-blur-xs rounded-2xl border border-slate-200 text-left text-xs space-y-1.5 font-medium text-slate-700 shadow-sm">
-                <p>📍 <b>สตูดิโอที่บ้าน:</b> 99/263 ม.The Plant-Light ติวานนท์-รังสิต ปทุมธานี</p>
-                <p>🏢 <b>ศูนย์ราชการ:</b> อาคาร B ชั้นล่าง (ตรงข้าม AIS) ถ.แจ้งวัฒนะ</p>
-                <p>📞 <b>โทรติดต่อด่วน:</b> 092-393-7770 (คุณเสถียร), 085-433-6699 (คุณนก)</p>
-            </div>
-            <p class="relative z-10 text-xs text-slate-400">คุณสามารถปิดหน้านี้ได้เลยครับ</p>
+      <div class="row-2">
+        <div class="field">
+          <label class="label" for="booking_date">วันที่สะดวก</label>
+          <input class="input" type="date" id="booking_date" required>
         </div>
-
-        <div class="p-4 bg-slate-50 border-t border-slate-100 text-center">
-            <p class="text-xs text-slate-500">เสถียรการแว่น ดูแลสายตาโดยช่างผู้เชี่ยวชาญกว่า 30 ปี</p>
+        <div class="field">
+          <label class="label" for="booking_time">ช่วงเวลา</label>
+          <select class="select" id="booking_time" required></select>
         </div>
-    </div>
+      </div>
+      <div id="weekendWarn" class="notice notice-warn hidden">ศูนย์ราชการปิดวันเสาร์-อาทิตย์ ลองเลือกวันธรรมดา หรือนัดที่สตูดิโอที่บ้านแทน</div>
 
-    <script>
-        // Set minimum date to today
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('booking_date').min = today;
-        document.getElementById('booking_date').value = today;
+      <div class="field">
+        <label class="label" for="notes">ข้อความถึงร้าน <span class="opt">(ไม่บังคับ)</span></label>
+        <textarea class="textarea" id="notes" rows="3" placeholder="เช่น มากัน 2 คน, อยากปรึกษาเลนส์โปรเกรสซีฟ, ขอนำแว่นมาดัดทรง"></textarea>
+      </div>
 
-        // Auto capture userId and location from URL query parameter
-        const urlParams = new URLSearchParams(window.location.search);
-        const uid = urlParams.get('userId');
-        if (uid) {
-            document.getElementById('userId').value = uid;
-        }
-        const loc = urlParams.get('loc');
-        if (loc === 'gov') {
-            const govRadio = document.querySelector('input[name="preferred_location"][value*="ศูนย์ราชการ"]');
-            if (govRadio) govRadio.checked = true;
-        }
+      <button class="btn" type="submit" id="btnSubmit">ส่งคำขอนัดหมาย</button>
+    </form>
+  </section>
 
-        // Form submission
-        document.getElementById('bookingForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('btnSubmit');
-            btn.disabled = true;
-            btn.innerHTML = "กำลังส่งข้อมูลนัดหมาย...";
+  <section id="doneView" class="done" aria-live="polite">
+    <div class="done-mark" aria-hidden="true">✓</div>
+    <h2>ส่งคำขอนัดหมายแล้ว</h2>
+    <p>ร้านได้รับคำขอของคุณแล้ว คุณเสถียรหรือคุณนกจะโทรกลับเพื่อยืนยันวันและเวลา ปิดหน้านี้ได้เลย</p>
+  </section>
 
-            const selectedLoc = document.querySelector('input[name="preferred_location"]:checked')?.value || 'สตูดิโอที่บ้าน';
+  {% include "_shop_contact.html" %}
+</main>
 
-            const payload = {
-                customer_name: document.getElementById('customer_name').value.trim(),
-                phone: document.getElementById('phone').value.trim(),
-                preferred_location: selectedLoc,
-                booking_date: document.getElementById('booking_date').value,
-                booking_time: document.getElementById('booking_time').value,
-                service_type: document.getElementById('service_type').value,
-                notes: document.getElementById('notes').value.trim(),
-                userId: document.getElementById('userId').value
-            };
+<script>
+  const SLOTS = {
+    home: [
+      ["ช่วงเช้า (09:00 - 12:00 น.)", "เช้า 9-12 น."],
+      ["ช่วงบ่าย (13:00 - 15:00 น.)", "บ่าย 13-15 น."],
+      ["ช่วงเย็น (16:30 - 19:00 น.)", "เย็น 16:30-19 น."],
+      ["ช่วงค่ำ (หลัง 19:00 น.)", "หลัง 19 น."]
+    ],
+    gov: [
+      ["ช่วงเช้า (09:00 - 12:00 น.)", "เช้า 9-12 น."],
+      ["ช่วงบ่าย (13:00 - 15:00 น.)", "บ่าย 13-15 น."]
+    ]
+  };
 
-            try {
-                const response = await fetch('/api/submit_booking', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: jsonString = JSON.stringify(payload)
-                });
-                const result = await response.json();
-                if (result.status === 'ok') {
-                    document.getElementById('bookingForm').classList.add('hidden');
-                    document.getElementById('successCard').classList.remove('hidden');
-                } else {
-                    alert('เกิดข้อผิดพลาด: ' + (result.message || 'กรุณาลองใหม่อีกครั้ง'));
-                    btn.disabled = false;
-                    btn.innerHTML = "<span>ยืนยันการนัดหมาย</span><span>➔</span>";
-                }
-            } catch (err) {
-                alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์ กรุณาลองใหม่อีกครั้ง');
-                btn.disabled = false;
-                btn.innerHTML = "<span>ยืนยันการนัดหมาย</span><span>➔</span>";
-            }
-        });
-    </script>
+  const $ = (id) => document.getElementById(id);
+  const dateInput = $("booking_date");
+  const timeSelect = $("booking_time");
+
+  function localToday() {
+    const d = new Date();
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().split("T")[0];
+  }
+  dateInput.min = localToday();
+  dateInput.value = localToday();
+
+  function selectedPlace() {
+    const v = document.querySelector('input[name="preferred_location"]:checked').value;
+    return v.includes("ศูนย์ราชการ") ? "gov" : "home";
+  }
+
+  function refreshSlots() {
+    const keep = timeSelect.value;
+    timeSelect.innerHTML = "";
+    SLOTS[selectedPlace()].forEach(([value, label]) => {
+      const o = document.createElement("option");
+      o.value = value; o.textContent = label;
+      timeSelect.appendChild(o);
+    });
+    if ([...timeSelect.options].some(o => o.value === keep)) timeSelect.value = keep;
+    checkWeekend();
+  }
+
+  function checkWeekend() {
+    const day = dateInput.value ? new Date(dateInput.value + "T00:00:00").getDay() : -1;
+    const isWeekend = day === 0 || day === 6;
+    $("weekendWarn").classList.toggle("hidden", !(selectedPlace() === "gov" && isWeekend));
+  }
+
+  document.querySelectorAll('input[name="preferred_location"]').forEach(r => r.addEventListener("change", refreshSlots));
+  dateInput.addEventListener("change", checkWeekend);
+
+  const params = new URLSearchParams(location.search);
+  if (params.get("userId")) $("userId").value = params.get("userId");
+  if (params.get("loc") === "gov") {
+    document.querySelector('input[name="preferred_location"][value*="ศูนย์ราชการ"]').checked = true;
+  }
+  refreshSlots();
+
+  function showError(msg) {
+    const box = $("formError");
+    box.textContent = msg;
+    box.classList.add("show");
+    box.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  $("bookingForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    $("formError").classList.remove("show");
+
+    const name = $("customer_name").value.trim();
+    const phone = $("phone").value.replace(/[^0-9]/g, "");
+    if (!name) return showError("กรุณากรอกชื่อผู้ตรวจ");
+    if (phone.length < 9) return showError("กรุณากรอกเบอร์โทรศัพท์ให้ครบ 9-10 หลัก");
+    if (!dateInput.value) return showError("กรุณาเลือกวันที่สะดวก");
+
+    const btn = $("btnSubmit");
+    btn.disabled = true;
+    btn.textContent = "กำลังส่ง...";
+
+    const payload = {
+      customer_name: name,
+      phone: phone,
+      preferred_location: document.querySelector('input[name="preferred_location"]:checked').value,
+      booking_date: dateInput.value,
+      booking_time: timeSelect.value,
+      service_type: "ตรวจวัดสายตาประกอบแว่น",
+      notes: $("notes").value.trim(),
+      userId: $("userId").value
+    };
+
+    try {
+      const res = await fetch("/api/submit_booking", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.status === "ok") {
+        $("formView").classList.add("hidden");
+        $("doneView").classList.add("show");
+        window.scrollTo({ top: 0 });
+        return;
+      }
+      showError(data.message || "ส่งคำขอไม่สำเร็จ กรุณาลองอีกครั้ง หรือโทรหาร้าน");
+    } catch (err) {
+      showError("ส่งไม่สำเร็จเพราะอินเทอร์เน็ตขัดข้อง กรุณาลองอีกครั้ง หรือโทรหาร้าน");
+    }
+    btn.disabled = false;
+    btn.textContent = "ส่งคำขอนัดหมาย";
+  });
+</script>
 </body>
 </html>

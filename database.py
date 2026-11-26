@@ -476,8 +476,8 @@ def create_order(line_user_id, customer_name, phone, address, order_details=""):
         row = cursor.fetchone()
         if row:
             line_user_id = row["user_id"]
-        else:
-            line_user_id = get_latest_line_user()
+        # PRIVACY: never guess "whoever messaged last" - that sent other people's
+        # name/phone/address to the wrong customer. Unknown stays empty.
 
     cursor.execute("""
     INSERT INTO orders (order_no, line_user_id, customer_name, phone, address, order_details, status)
@@ -750,8 +750,8 @@ def create_appointment(line_user_id, customer_name, phone, preferred_location, b
         row = cursor.fetchone()
         if row:
             line_user_id = row["user_id"]
-        else:
-            line_user_id = get_latest_line_user()
+        # PRIVACY: never guess "whoever messaged last" - that sent other people's
+        # name/phone/address to the wrong customer. Unknown stays empty.
 
     cursor.execute("""
     INSERT INTO appointments (booking_no, line_user_id, customer_name, phone, preferred_location, booking_date, booking_time, service_type, notes, status)
